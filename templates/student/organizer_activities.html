@@ -59,30 +59,74 @@
             </nav>
             <div class="container mt-4">
                 <h2 class="mb-4"><i class="fas fa-users-cog me-2"></i>我组织的活动</h2>
-                {% if activities and activities|length > 0 %}
-                <div class="row">
-                    {% for act in activities %}
+                
+                <!-- 进行中的活动 -->
+                {% if ongoing and ongoing|length > 0 %}
+                <h4 class="mb-3 text-primary"><i class="fas fa-play-circle me-2"></i>未结束的活动</h4>
+                <div class="row mb-4">
+                    {% for act in ongoing %}
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <span class="fw-bold">{{ act.activity_name }}</span>
-                                    <span class="status-badge bg-{% if act.status=='approved' %}success{% elif act.status=='pending_review' %}warning{% elif act.status=='in_progress' %}info{% elif act.status=='completed' %}secondary{% elif act.status=='cancelled' %}danger{% else %}secondary{% endif %}">
-                                        {{ act.status|replace('approved','已批准')|replace('pending_review','待审核')|replace('in_progress','进行中')|replace('completed','已完成')|replace('cancelled','已取消')|replace('planning','策划中') }}
-                                    </span>
+                                    <span class="status-badge bg-success">进行中</span>
                                 </div>
                                 <div class="mb-2 text-muted" style="font-size:0.95em;">
-                                    <div>类型：{{ act.activity_type }}</div>
-                                    <div>时间：{{ act.start_time }} ~ {{ act.end_time }}</div>
-                                    <div>人数：{{ act.max_participants }}</div>
-                                    <div>简介：{{ act.description }}</div>
+                                    <div><strong>类型：</strong>{{ act.activity_type or '未设置' }}</div>
+                                    <div><strong>时间：</strong>{{ act.start_time }} ~ {{ act.end_time }}</div>
+                                    <div><strong>人数：</strong>{{ act.participant_count }}/{{ act.max_participants }}</div>
+                                    <div><strong>指导教师：</strong>{{ act.supervisor_name or '未分配' }}</div>
+                                    <div><strong>申请统计：</strong>总申请{{ act.total_applications or 0 }}人，已批准{{ act.approved_count or 0 }}人，待审核{{ act.pending_count or 0 }}人</div>
+                                    <div><strong>场地状态：</strong>
+                                        <span class="badge bg-{% if act.venue_status == '已分配' %}success{% elif act.venue_status == '待审核' %}warning{% elif act.venue_status == '已拒绝' %}danger{% else %}secondary{% endif %}">
+                                            {{ act.venue_status }}
+                                        </span>
+                                        {% if act.venue_name %}({{ act.venue_name }}){% endif %}
+                                    </div>
+                                    <div><strong>简介：</strong>{{ act.description or '暂无描述' }}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
-                {% else %}
+                {% endif %}
+                
+                <!-- 已结束的活动 -->
+                {% if ended and ended|length > 0 %}
+                <h4 class="mb-3 text-secondary"><i class="fas fa-check-circle me-2"></i>已结束的活动</h4>
+                <div class="row">
+                    {% for act in ended %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">{{ act.activity_name }}</span>
+                                    <span class="status-badge bg-secondary">已结束</span>
+                                </div>
+                                <div class="mb-2 text-muted" style="font-size:0.95em;">
+                                    <div><strong>类型：</strong>{{ act.activity_type or '未设置' }}</div>
+                                    <div><strong>时间：</strong>{{ act.start_time }} ~ {{ act.end_time }}</div>
+                                    <div><strong>人数：</strong>{{ act.participant_count }}/{{ act.max_participants }}</div>
+                                    <div><strong>指导教师：</strong>{{ act.supervisor_name or '未分配' }}</div>
+                                    <div><strong>申请统计：</strong>总申请{{ act.total_applications or 0 }}人，已批准{{ act.approved_count or 0 }}人，待审核{{ act.pending_count or 0 }}人</div>
+                                    <div><strong>场地状态：</strong>
+                                        <span class="badge bg-{% if act.venue_status == '已分配' %}success{% elif act.venue_status == '待审核' %}warning{% elif act.venue_status == '已拒绝' %}danger{% else %}secondary{% endif %}">
+                                            {{ act.venue_status }}
+                                        </span>
+                                        {% if act.venue_name %}({{ act.venue_name }}){% endif %}
+                                    </div>
+                                    <div><strong>简介：</strong>{{ act.description or '暂无描述' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if not ongoing and not ended %}
                 <div class="alert alert-info">暂无你组织的活动。</div>
                 {% endif %}
             </div>

@@ -279,11 +279,32 @@ def organizer_activities():
     """我组织的活动页面"""
     db = get_db()
     try:
+        # 查询我组织的所有活动，包含更多详细信息
         activities = db.execute('''
-            SELECT * FROM activities
-            WHERE organizer_id = ?
-            ORDER BY start_time DESC
+            SELECT a.*, 
+                   t.name as supervisor_name,
+                   COUNT(ap.participation_id) as total_applications,
+                   SUM(CASE WHEN ap.status = 'approved' THEN 1 ELSE 0 END) as approved_count,
+                   SUM(CASE WHEN ap.status = 'applied' THEN 1 ELSE 0 END) as pending_count,
+                   vb.booking_status,
+                   vb.venue_id,
+                   v.venue_name,
+                   CASE 
+                       WHEN vb.booking_status = 'approved' THEN '已分配'
+                       WHEN vb.booking_status = 'pending' THEN '待审核'
+                       WHEN vb.booking_status = 'rejected' THEN '已拒绝'
+                       ELSE '未申请'
+                   END as venue_status
+            FROM activities a
+            LEFT JOIN users t ON a.supervisor_id = t.user_id
+            LEFT JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            LEFT JOIN venue_bookings vb ON a.activity_id = vb.activity_id
+            LEFT JOIN venues v ON vb.venue_id = v.venue_id
+            WHERE a.organizer_id = ?
+            GROUP BY a.activity_id
+            ORDER BY a.start_time DESC
         ''', (session['user_id'],)).fetchall()
+        
         now = datetime.now()
         ongoing = []
         ended = []
@@ -357,17 +378,106 @@ def student_apply():
         db.close()
     return render_template('student/activity_apply.html', skill_options=skill_options)
 
-@app.route('/student/score_entry')
+@app.route('/student/score_entry', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def score_entry():
-    # 示例数据，实际应从数据库查询
-    scores = [
-        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'input_by': '张三', 'score': 5},
-        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'input_by': '张三', 'score': 4},
-        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'input_by': '张三', 'score': 3},
-    ]
-    return render_template('student/score_entry.html', scores=scores)
+    db = get_db()
+    if request.method == 'POST':
+        total = int(request.form.get('total', 0))
+        updated = 0
+        for i in range(total):
+            score = request.form.get(f'score_{i}')
+            activity_id = request.form.get(f'activity_id_{i}')
+            student_id = request.form.get(f'student_id_{i}')
+            if score is None or activity_id is None or student_id is None:
+                continue
+            try:
+                score = int(score)
+                if not (0 <= score <= 5):
+                    continue
+            except Exception:
+                continue
+            # 检查是否已有评价，存在则更新，否则插入
+            existing = db.execute('''
+                SELECT evaluation_id FROM participant_evaluations
+                WHERE activity_id = ? AND participant_id = ? AND organizer_id = ?
+            ''', (activity_id, student_id, session['user_id'])).fetchone()
+            if existing:
+                db.execute('''
+                    UPDATE participant_evaluations
+                    SET rating = ?, created_at = CURRENT_TIMESTAMP
+                    WHERE evaluation_id = ?
+                ''', (score, existing['evaluation_id']))
+            else:
+                db.execute('''
+                    INSERT INTO participant_evaluations (activity_id, participant_id, organizer_id, rating)
+                    VALUES (?, ?, ?, ?)
+                ''', (activity_id, student_id, session['user_id'], score))
+            updated += 1
+        db.commit()
+        flash(f'已保存{updated}条成绩', 'success')
+    try:
+        # 查询我组织的活动及其已批准的参与学生
+        scores = db.execute('''
+            SELECT a.activity_id, u.name as student_name, u.user_id as student_id,
+                   a.activity_name, a.start_time || ' 至 ' || a.end_time as activity_time,
+                   s.grade, a.max_participants as participants,
+                   ? as input_by,
+                   COALESCE(pe.rating, 0) as score
+            FROM activities a
+            JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            JOIN students s ON ap.student_id = s.student_id
+            JOIN users u ON s.student_id = u.user_id
+            LEFT JOIN participant_evaluations pe 
+                ON pe.activity_id = a.activity_id AND pe.participant_id = ap.student_id AND pe.organizer_id = ?
+            WHERE a.organizer_id = ? AND ap.status = 'approved'
+            ORDER BY a.start_time DESC, u.name
+        ''', (session['username'], session['user_id'], session['user_id'])).fetchall()
+        return render_template('student/score_entry.html', scores=scores)
+    finally:
+        db.close()
+
+@app.route('/student/save_score', methods=['POST'])
+@login_required
+@role_required('student')
+def save_score():
+    data = request.get_json()
+    activity_id = data.get('activity_id')
+    student_id = data.get('student_id')
+    score = data.get('score')
+    if not (activity_id and student_id and score is not None):
+        return jsonify({'success': False, 'message': '参数不完整'})
+    try:
+        score = int(score)
+        if not (0 <= score <= 5):
+            return jsonify({'success': False, 'message': '成绩必须为0~5'})
+    except Exception:
+        return jsonify({'success': False, 'message': '成绩格式错误'})
+    db = get_db()
+    try:
+        existing = db.execute('''
+            SELECT evaluation_id FROM participant_evaluations
+            WHERE activity_id = ? AND participant_id = ? AND organizer_id = ?
+        ''', (activity_id, student_id, session['user_id'])).fetchone()
+        if existing:
+            db.execute('''
+                UPDATE participant_evaluations
+                SET rating = ?, created_at = CURRENT_TIMESTAMP
+                WHERE evaluation_id = ?
+            ''', (score, existing['evaluation_id']))
+        else:
+            db.execute('''
+                INSERT INTO participant_evaluations (activity_id, participant_id, organizer_id, rating)
+                VALUES (?, ?, ?, ?)
+            ''', (activity_id, student_id, session['user_id'], score))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        db.close()
 
 @app.route('/student/activity_review')
 @login_required

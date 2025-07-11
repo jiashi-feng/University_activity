@@ -62,14 +62,10 @@
         <div style="flex: 1;">
             <div class="main-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <input type="text" class="form-control d-inline-block me-2" style="width:180px;" placeholder="姓名">
-                        <input type="text" class="form-control d-inline-block me-2" style="width:180px;" placeholder="学号">
-                        <button class="btn btn-primary me-2">搜索</button>
-                        <button class="btn btn-warning">重置</button>
-                    </div>
-                    <button class="btn btn-info" style="background:#1976d2;color:#fff;">录入活动成绩</button>
+                    <div></div>
+                    <button id="edit-btn" type="button" class="btn btn-info" style="background:#1976d2;color:#fff;">录入活动成绩</button>
                 </div>
+                <form method="post" action="/student/score_entry">
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead>
@@ -94,12 +90,56 @@
                                 <td>{{ row.grade }}</td>
                                 <td>{{ row.participants }}</td>
                                 <td>{{ row.input_by }}</td>
-                                <td>{{ row.score }}</td>
+                                <td>
+                                    <select name="score_{{ loop.index0 }}" class="form-control score-input" data-activity-id="{{ row.activity_id }}" data-student-id="{{ row.student_id }}" disabled onchange="saveScore(this)">
+                                        <option value="">请选择</option>
+                                        <option value="0">0分</option>
+                                        <option value="1">1分</option>
+                                        <option value="2">2分</option>
+                                        <option value="3">3分</option>
+                                        <option value="4">4分</option>
+                                        <option value="5">5分</option>
+                                    </select>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                </form>
+                <script>
+                document.getElementById('edit-btn').onclick = function() {
+                    console.log('按钮被点击');
+                    var inputs = document.querySelectorAll('.score-input');
+                    console.log('找到选择框数量:', inputs.length);
+                    inputs.forEach(function(input) {
+                        input.disabled = false;
+                        console.log('启用选择框');
+                    });
+                };
+                function saveScore(input) {
+                    var score = parseInt(input.value);
+                    if (isNaN(score) || score < 0 || score > 5) {
+                        alert('请选择0-5之间的成绩！');
+                        input.value = '';
+                        return;
+                    }
+                    input.disabled = true;
+                    var activity_id = input.getAttribute('data-activity-id');
+                    var student_id = input.getAttribute('data-student-id');
+                    fetch('/student/save_score', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ activity_id, student_id, score })
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) {
+                            alert('成绩录入成功！');
+                        } else {
+                            alert('录入失败：' + data.message);
+                        }
+                    });
+                }
+                </script>
             </div>
         </div>
     </div>
