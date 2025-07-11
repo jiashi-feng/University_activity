@@ -87,16 +87,6 @@ def activities():
     }
     return render_template('admin/activities.html', admin_info=admin_info)
 
-@admin_bp.route('/statistics')
-@admin_required
-def statistics():
-    """数据统计页面"""
-    admin_info = {
-        'name': session.get('username'),
-        'college': session.get('college')
-    }
-    return render_template('admin/statistics.html', admin_info=admin_info)
-
 @admin_bp.route('/profile')
 @admin_required
 def profile():
