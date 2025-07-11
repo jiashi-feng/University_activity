@@ -35,8 +35,8 @@ body {
 
 /* 左侧导航栏样式 */
 .side-navbar {
-    width: 250px;
-    background-color: #1a237e;
+    width: 240px;
+    background-color: #1a237e;  /* 改为深蓝色 */
     position: fixed;
     top: 60px;
     bottom: 0;
@@ -44,39 +44,41 @@ body {
     padding-top: 1rem;
     overflow-y: auto;
     z-index: 1020;
-    transition: all 0.3s ease;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
 }
 
 .side-navbar .nav-link {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9) !important;  /* 文字改为白色 */
     padding: 0.8rem 1.5rem;
     border-radius: 0;
     transition: all 0.3s;
     font-size: 0.95rem;
-}
-
-.side-navbar .nav-link:hover {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.1);
-    padding-left: 1.75rem;
-}
-
-.side-navbar .nav-link.active {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-left: 4px solid #fff;
-    padding-left: calc(1.5rem - 4px);
+    display: flex;
+    align-items: center;
 }
 
 .side-navbar .nav-link i {
     width: 20px;
-    text-align: center;
     margin-right: 8px;
+    color: rgba(255, 255, 255, 0.9);  /* 图标改为白色 */
 }
 
-/* 主内容区域样式 */
+.side-navbar .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1);  /* 悬停时背景色改为半透明白色 */
+    padding-left: 1.75rem;
+}
+
+.side-navbar .nav-link.active {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15);  /* 选中时背景色改为半透明白色 */
+    border-left: 4px solid #ffffff;  /* 左边框改为白色 */
+    padding-left: calc(1.5rem - 4px);
+}
+
+/* 主要内容区域样式 */
 .main-content {
-    margin-left: 250px;
+    margin-left: 240px;
     margin-top: 60px;
     padding: 2rem;
     min-height: calc(100vh - 60px);
@@ -108,29 +110,54 @@ body {
     padding: 1.25rem;
 }
 
-/* 表格样式 */
+/* 表格样式优化 */
 .table {
-    margin-bottom: 0;
+    margin-top: 1rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .table th {
-    border-top: none;
     background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
     font-weight: 600;
 }
 
-/* 响应式调整 */
-@media (max-width: 768px) {
+.table td {
+    vertical-align: middle;
+    border-color: #e9ecef;
+}
+
+/* 按钮样式优化 */
+.btn-sm {
+    margin: 0 2px;
+    padding: 0.25rem 0.75rem;
+}
+
+/* 模态框样式优化 */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+/* 响应式布局调整 */
+@media (max-width: 767.98px) {
     .side-navbar {
-        width: 200px;
-        transform: translateX(-200px);
+        width: 100%;
+        position: static;
+        height: auto;
+        margin-top: 60px;
     }
-    
+
     .main-content {
         margin-left: 0;
-    }
-    
-    .side-navbar.show {
-        transform: translateX(0);
+        padding: 1rem;
     }
 } 

@@ -5,6 +5,7 @@ import os
 from functools import wraps
 from admin.routes import admin_bp  # 导入管理员蓝图
 from admin.venues import venues_bp
+from admin.activity_routes import admin_activity
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key'  # 添加密钥用于session
@@ -12,6 +13,7 @@ app.secret_key = 'your-secret-key'  # 添加密钥用于session
 # 注册蓝图
 app.register_blueprint(admin_bp)  # admin_bp已经有/admin前缀
 app.register_blueprint(venues_bp)  # venues_bp已经有/admin前缀
+app.register_blueprint(admin_activity, url_prefix='/admin')
 
 # 数据库文件路径
 DATABASE = 'University_activit.db'
