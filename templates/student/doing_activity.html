@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>进行活动 - 学生活动管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #f5f7fa; }
+        .sidebar {
+            background: #1a237e;
+            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            border-radius: 12px 0 0 12px;
+        }
+        .sidebar .nav-link.active {
+            background: #fff;
+            color: #1a237e !important;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .sidebar .nav-link {
+            color: #fff !important;
+            margin-bottom: 8px;
+        }
+        .sidebar .nav-link:hover {
+            background: #3949ab;
+            color: #fff !important;
+        }
+        .sidebar-title {
+            border-bottom: 1px solid #3949ab;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .sidebar-title span {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            width: 100%;
+        }
+        .main-content {
+            margin-left: 16.6667%;
+            padding: 2rem 2rem 2rem 2rem;
+        }
+        .form-label { font-weight: bold; }
+        .form-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem 2rem 1rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .table-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .table thead { background: #e3f0ff; }
+        .stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: none;
+        }
+        .circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #e3f0ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #1a237e;
+            margin-bottom: 0.25rem;
+        }
+        .step-start {
+            background: #1a237e;
+            color: #fff;
+        }
+        .step-label-active {
+            color: #1a237e;
+            font-weight: bold;
+        }
+        .step-line {
+            flex: 1;
+            height: 4px;
+            background: #e3f0ff;
+            margin: 0 8px;
+            border-radius: 2px;
+        }
+        .label {
+            font-size: 1.1rem;
+            color: #1a237e;
+            text-align: center;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="padding-left:0;">
+        <div class="row">
+            <!-- 左侧导航栏 -->
+            <nav class="col-md-2 d-none d-md-block sidebar p-0">
+                <div class="d-flex flex-column align-items-start h-100">
+                    <div class="sidebar-title d-flex justify-content-center align-items-center flex-column">
+                        <a href="/student/dashboard" class="text-decoration-none w-100 d-flex justify-content-center align-items-center">
+                            <span class="fs-2 fw-bold text-white text-center" style="width: 100%;">学生活动管理</span>
+                        </a>
+                    </div>
+                    <ul class="nav flex-column w-100 mt-5 px-2">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#">已结束活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#">个人信息查看</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#">个人信息修改</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#">个人课表</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#">活动请假</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#">消息</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <!-- 主内容区 -->
+            <main class="col-md-10 offset-md-2 main-content">
+                <div class="row">
+                    <!-- 进度填写表单 -->
+                    <div class="col-md-6">
+                        <div class="form-section mb-4">
+                            <h4 class="mb-4">进行活动</h4>
+                            <div class="mb-3">
+                                <label class="form-label">选择活动：</label>
+                                <input type="text" class="form-control" placeholder="请输入">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">填写进度表：</label>
+                                <div class="stepper mb-3 justify-content-between">
+                                    <div class="step">
+                                        <div class="circle"><i class="bi bi-circle"></i></div>
+                                        <div class="label step-label-active">第一节点</div>
+                                    </div>
+                                    <div class="step-line"></div>
+                                    <div class="step">
+                                        <div class="circle"><i class="bi bi-circle"></i></div>
+                                        <div class="label">第二节点</div>
+                                    </div>
+                                    <div class="step-line"></div>
+                                    <div class="step">
+                                        <div class="circle"><i class="bi bi-circle"></i></div>
+                                        <div class="label">第三节点</div>
+                                    </div>
+                                    <div class="step-line"></div>
+                                    <div class="step">
+                                        <div class="circle"><i class="bi bi-circle"></i></div>
+                                        <div class="label">第四节点</div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">节点：</label>
+                                    <select class="form-select">
+                                        <option>第一时间节点</option>
+                                        <option>第二时间节点</option>
+                                        <option>第三时间节点</option>
+                                        <option>第四时间节点</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">凭证与说明：</label>
+                                    <textarea class="form-control" rows="5" placeholder="请输入"></textarea>
+                                </div>
+                                <div class="text-end">
+                                    <button class="btn btn-primary">完成</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 正在进行的活动表格 -->
+                    <div class="col-md-6">
+                        <div class="table-section">
+                            <h5 class="mb-3">正在进行的活动：</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>序号</th>
+                                            <th>活动名称</th>
+                                            <th>报名时间</th>
+                                            <th>剩余时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>1</td><td>游泳比赛</td><td>2025.5.18</td><td>15天</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td><td></td><td></td><td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td><td></td><td></td><td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>4</td><td></td><td></td><td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>5</td><td></td><td></td><td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>6</td><td></td><td></td><td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>7</td><td></td><td></td><td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html> 

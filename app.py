@@ -311,6 +311,64 @@ def create_activity():
     
     return render_template('student/create_activity.html')
 
+@app.route('/student/add_activity')
+@login_required
+@role_required('student')
+def add_activity():
+    """活动添加页面"""
+    return render_template('student/add_activity.html')
+
+@app.route('/student/doing_activity')
+@login_required
+@role_required('student')
+def doing_activity():
+    """进行活动页面"""
+    return render_template('student/doing_activity.html')
+
+@app.route('/student/finished_activity')
+@login_required
+@role_required('student')
+def finished_activity():
+    """已结束活动页面"""
+    return render_template('student/finished_activity.html')
+
+@app.route('/student/profile_view')
+@login_required
+@role_required('student')
+def profile_view():
+    """个人信息查看页面"""
+    return render_template('student/profile_view.html')
+
+@app.route('/student/profile_edit')
+@login_required
+@role_required('student')
+def profile_edit():
+    """个人信息修改页面"""
+    return render_template('student/profile_edit.html')
+
+@app.route('/student/schedule')
+@login_required
+@role_required('student')
+def schedule():
+    """个人课表页面"""
+    return render_template('student/schedule.html')
+
+@app.route('/student/leave', methods=['GET', 'POST'])
+@login_required
+@role_required('student')
+def student_leave():
+    if request.method == 'POST':
+        # 这里可以处理表单数据保存逻辑
+        flash('请假申请已提交！', 'success')
+        return redirect(url_for('student_leave'))
+    return render_template('student/leave.html')
+
+@app.route('/student/message')
+@login_required
+@role_required('student')
+def student_message():
+    return render_template('student/message.html')
+
 # ==================== 教师路由 ====================
 
 @app.route('/teacher/dashboard')
