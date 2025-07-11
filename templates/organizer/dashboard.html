@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建活动 - 活动管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid #667eea;
+        }
+        .section-title {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 0.75rem 2rem;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            border: none;
+            padding: 0.75rem 2rem;
+        }
+        .required {
+            color: #dc3545;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .help-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .preview-section {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        .resource-item {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e9ecef;
+        }
+        .validation-feedback {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .validation-feedback.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-graduation-cap me-2"></i>活动管理系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/organizer/dashboard">
+                    <i class="fas fa-tachometer-alt me-1"></i>我的活动
+                </a>
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user-tie me-1"></i>组织者：李四
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2><i class="fas fa-plus-circle me-2"></i>创建新活动</h2>
+                <p class="text-muted">填写活动信息，提交审批后即可开始招募参与者</p>
+            </div>
+        </div>
+
+        <form id="createActivityForm" method="POST" action="/organizer/create_activity" enctype="multipart/form-data">
+            <!-- 基本信息 -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>基本信息
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">
+                                活动标题 <span class="required">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="title" name="title" required maxlength="100">
+                            <div class="validation-feedback" id="titleFeedback">活动标题不能为空</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="type" class="form-label">
+                                活动类型 <span class="required">*</span>
+                            </label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="">请选择活动类型</option>
+                                <option value="学术">学术类</option>
+                                <option value="文艺">文艺类</option>
+                                <option value="体育">体育类</option>
+                                <option value="社会实践">社会实践</option>
+                                <option value="志愿服务">志愿服务</option>
+                                <option value="创新创业">创新创业</option>
+                                <option value="社团活动">社团活动</option>
+                            </select>
+                            <div class="validation-feedback" id="typeFeedback">请选择活动类型</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">
+                        活动描述 <span class="required">*</span>
+                    </label>
+                    <textarea class="form-control" id="description" name="description" rows="4" required maxlength="500"></textarea>
+                    <div class="form-text">详细描述活动内容、目的和预期效果（最多500字）</div>
+                    <div class="validation-feedback" id="descriptionFeedback">活动描述不能为空</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="max_participants" class="form-label">
+                                最大参与人数 <span class="required">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="max_participants" name="max_participants" 
+                                   min="1" max="200" required>
+                            <div class="form-text">建议根据场地和活动性质合理设置</div>
+                            <div class="validation-feedback" id="participantsFeedback">请输入有效的参与人数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="points" class="form-label">
+                                活动积分 <span class="required">*</span>
+                            </label>
+                            <input type="number" class="form-control" id="points" name="points" 
+                                   min="1" max="50" required>
+                            <div class="form-text">参与者完成活动后获得的积分奖励</div>
+                            <div class="validation-feedback" id="pointsFeedback">请输入有效的积分值</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 时间安排 -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-calendar-alt me-2"></i>时间安排
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="registration_start" class="form-label">
+                                报名开始时间 <span class="required">*</span>
+                            </label>
+                            <input type="datetime-local" class="form-control" id="registration_start" 
+                                   name="registration_start" required>
+                            <div class="validation-feedback" id="regStartFeedback">请选择报名开始时间</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="registration_end" class="form-label">
+                                报名结束时间 <span class="required">*</span>
+                            </label>
+                            <input type="datetime-local" class="form-control" id="registration_end" 
+                                   name="registration_end" required>
+                            <div class="validation-feedback" id="regEndFeedback">请选择报名结束时间</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="activity_start" class="form-label">
+                                活动开始时间 <span class="required">*</span>
+                            </label>
+                            <input type="datetime-local" class="form-control" id="activity_start" 
+                                   name="activity_start" required>
+                            <div class="validation-feedback" id="actStartFeedback">请选择活动开始时间</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="activity_end" class="form-label">
+                                活动结束时间 <span class="required">*</span>
+                            </label>
+                            <input type="datetime-local" class="form-control" id="activity_end" 
+                                   name="activity_end" required>
+                            <div class="validation-feedback" id="actEndFeedback">请选择活动结束时间</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 场地与资源 -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-map-marker-alt me-2"></i>场地与资源申请
+                </h4>
+                
+                <div class="mb-3">
+                    <label for="venue_requirement" class="form-label">
+                        场地需求 <span class="required">*</span>
+                    </label>
+                    <select class="form-select" id="venue_requirement" name="venue_requirement" required>
+                        <option value="">请选择场地类型</option>
+                        <option value="教室">普通教室</option>
+                        <option value="多媒体教室">多媒体教室</option>
+                        <option value="实验室">实验室</option>
+                        <option value="体育馆">体育馆</option>
+                        <option value="礼堂">礼堂/报告厅</option>
+                        <option value="户外场地">户外场地</option>
+                        <option value="其他">其他场地</option>
+                    </select>
+                    <div class="validation-feedback" id="venueFeedback">请选择场地类型</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="venue_detail" class="form-label">场地详细要求</label>
+                    <textarea class="form-control" id="venue_detail" name="venue_detail" rows="3" 
+                              placeholder="详细说明场地要求，如设备需求、容量要求等"></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="budget_request" class="form-label">
+                                预算申请（元）
+                            </label>
+                            <input type="number" class="form-control" id="budget_request" name="budget_request" 
+                                   min="0" step="0.01" placeholder="0.00">
+                            <div class="form-text">如需要资金支持，请填写预算金额</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="budget_detail" class="form-label">预算明细</label>
+                            <textarea class="form-control" id="budget_detail" name="budget_detail" rows="3" 
+                                      placeholder="详细说明资金用途，如材料费、奖品费等"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="equipment_need" class="form-label">设备需求</label>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="projector" name="equipment[]" value="投影仪">
+                                <label class="form-check-label" for="projector">投影仪</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="microphone" name="equipment[]" value="麦克风">
+                                <label class="form-check-label" for="microphone">麦克风</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="camera" name="equipment[]" value="摄像设备">
+                                <label class="form-check-label" for="camera">摄像设备</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sound" name="equipment[]" value="音响">
+                                <label class="form-check-label" for="sound">音响设备</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="computer" name="equipment[]" value="电脑">
+                                <label class="form-check-label" for="computer">电脑设备</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="other_equipment" name="equipment[]" value="其他">
+                                <label class="form-check-label" for="other_equipment">其他设备</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="other_equipment_detail" class="form-label">其他设备详细说明</label>
+                    <textarea class="form-control" id="other_equipment_detail" name="other_equipment_detail" 
+                              rows="2" placeholder="如勾选了其他设备，请详细说明"></textarea>
+                </div>
+            </div>
+
+            <!-- 参与者要求 -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-users me-2"></i>参与者要求
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="grade_requirement" class="form-label">年级要求</label>
+                            <select class="form-select" id="grade_requirement" name="grade_requirement">
+                                <option value="">不限年级</option>
+                                <option value="大一">大一</option>
+                                <option value="大二">大二</option>
+                                <option value="大三">大三</option>
+                                <option value="大四">大四</option>
+                                <option value="研究生">研究生</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="major_requirement" class="form-label">专业要求</label>
+                            <input type="text" class="form-control" id="major_requirement" name="major_requirement" 
+                                   placeholder="如：计算机相关专业（不填则不限专业）">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="skill_requirement" class="form-label">技能要求</label>
+                    <textarea class="form-control" id="skill_requirement" name="skill_requirement" rows="3" 
+                              placeholder="描述参与者需要具备的技能或特长"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="selection_criteria" class="form-label">筛选标准</label>
+                    <textarea class="form-control" id="selection_criteria" name="selection_criteria" rows="3" 
+                              placeholder="如果报名人数超过限制，将如何筛选参与者"></textarea>
+                </div>
+            </div>
+
+            <!-- 附加信息 -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-paperclip me-2"></i>附加信息
+                </h4>
+                
+                <div class="mb-3">
+                    <label for="contact_info" class="form-label">
+                        联系方式 <span class="required">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="contact_info" name="contact_info" required
+                           placeholder="QQ群、微信群或手机号码">
+                    <div class="validation-feedback" id="contactFeedback">请提供联系方式</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="notes" class="form-label">备注说明</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" 
+                              placeholder="其他需要说明的事项"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="activity_image" class="form-label">活动封面图片</label>
+                    <input type="file" class="form-control" id="activity_image" name="activity_image" 
+                           accept="image/*">
+                    <div class="form-text">支持JPG、PNG格式，文件大小不超过2MB</div>
+                </div>
+            </div>
+
+            <!-- 预览区域 -->
+            <div class="preview-section">
+                <h4 class="section-title">
+                    <i class="fas fa-eye me-2"></i>活动预览
+                </h4>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-secondary" id="previewType">未选择类型</span>
+                            <span class="badge bg-warning" id="previewPoints">0积分</span>
+                        </div>
+                        <h5 class="card-title" id="previewTitle">活动标题</h5>
+                        <p class="card-text text-muted" id="previewTime">
+                            <i class="fas fa-calendar me-1"></i>活动时间<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>活动地点<br>
+                            <i class="fas fa-users me-1"></i>参与人数
+                        </p>
+                        <p class="card-text" id="previewDescription">活动描述</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 提交按钮 -->
+            <div class="text-center mt-4 mb-5">
+                <button type="button" class="btn btn-secondary me-3" onclick="saveDraft()">
+                    <i class="fas fa-save me-1"></i>保存草稿
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-1"></i>提交审批
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 实时预览功能
+        function updatePreview() {
+            const title = document.getElementById('title').value || '活动标题';
+            const type = document.getElementById('type').value || '未选择类型';
+            const description = document.getElementById('description').value || '活动描述';
+            const points = document.getElementById('points').value || '0';
+            const maxParticipants = document.getElementById('max_participants').value || '未设置';
+            const venue = document.getElementById('venue_requirement').value || '未选择';
+            const activityStart = document.getElementById('activity_start').value;
+            const activityEnd = document.getElementById('activity_end').value;
+
+            document.getElementById('previewTitle').textContent = title;
+            document.getElementById('previewType').textContent = type;
+            document.getElementById('previewDescription').textContent = description;
+            document.getElementById('previewPoints').textContent = points + '积分';
+
+            let timeText = '';
+            if (activityStart && activityEnd) {
+                const start = new Date(activityStart).toLocaleString('zh-CN');
+                const end = new Date(activityEnd).toLocaleString('zh-CN');
+                timeText = `${start} 至 ${end}`;
+            } else {
+                timeText = '活动时间';
+            }
+
+            document.getElementById('previewTime').innerHTML = `
+                <i class="fas fa-calendar me-1"></i>${timeText}<br>
+                <i class="fas fa-map-marker-alt me-1"></i>${venue}<br>
+                <i class="fas fa-users me-1"></i>最多${maxParticipants}人
+            `;
+        }
+
+        // 绑定输入事件
+        document.querySelectorAll('input, select, textarea').forEach(element => {
+            element.addEventListener('input', updatePreview);
+        });
+
+        // 表单验证
+        function validateForm() {
+            let isValid = true;
+            const requiredFields = [
+                'title', 'type', 'description', 'max_participants', 'points',
+                'registration_start', 'registration_end', 'activity_start', 'activity_end',
+                'venue_requirement', 'contact_info'
+            ];
+
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                const feedback = document.getElementById(fieldId + 'Feedback');
+                
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    if (feedback) feedback.classList.add('show');
+                    isValid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                    if (feedback) feedback.classList.remove('show');
+                }
+            });
+
+            // 验证时间逻辑
+            const regStart = new Date(document.getElementById('registration_start').value);
+            const regEnd = new Date(document.getElementById('registration_end').value);
+            const actStart = new Date(document.getElementById('activity_start').value);
+            const actEnd = new Date(document.getElementById('activity_end').value);
+            const now = new Date();
+
+            if (regStart < now) {
+                alert('报名开始时间不能早于当前时间');
+                isValid = false;
+            }
+            if (regEnd <= regStart) {
+                alert('报名结束时间必须晚于报名开始时间');
+                isValid = false;
+            }
+            if (actStart <= regEnd) {
+                alert('活动开始时间必须晚于报名结束时间');
+                isValid = false;
+            }
+            if (actEnd <= actStart) {
+                alert('活动结束时间必须晚于活动开始时间');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // 表单提交
+        document.getElementById('createActivityForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+
+            // 显示确认对话框
+            if (confirm('确定要提交活动申请吗？提交后将等待管理员审批。')) {
+                // 这里可以添加提交逻辑
+                const formData = new FormData(this);
+                
+                fetch('/organizer/create_activity', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('活动申请提交成功！请等待管理员审批。');
+                        window.location.href = '/organizer/dashboard';
+                    } else {
+                        alert('提交失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('提交失败，请稍后重试。');
+                });
+            }
+        });
+
+        // 保存草稿
+        function saveDraft() {
+            const formData = new FormData(document.getElementById('createActivityForm'));
+            formData.append('is_draft', '1');
+            
+            fetch('/organizer/save_draft', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('草稿保存成功！');
+                } else {
+                    alert('保存失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('保存失败，请稍后重试。');
+            });
+        }
+
+        // 初始化预览
+        updatePreview();
+    </script>
+</body>
+</html>

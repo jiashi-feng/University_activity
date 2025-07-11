@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 高校活动管理系统</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .login-header p {
+            color: #666;
+            margin: 0;
+        }
+        
+        .form-floating {
+            margin-bottom: 20px;
+        }
+        
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+        
+        .user-type-selector {
+            margin-bottom: 20px;
+        }
+        
+        .user-type-btn {
+            width: 100%;
+            margin-bottom: 10px;
+            border: 2px solid #e9ecef;
+            background: white;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        
+        .user-type-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .demo-accounts {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+        }
+        
+        .demo-accounts h6 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .demo-account-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .demo-account-item:hover {
+            background: #e9ecef;
+        }
+        
+        .demo-account-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .demo-info {
+            flex: 1;
+        }
+        
+        .demo-role {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .demo-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .demo-login-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .demo-login-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Login Header -->
+        <div class="login-header">
+            <i class="bi bi-calendar-event fs-1 text-primary mb-3"></i>
+            <h2>高校活动管理系统</h2>
+            <p>University Activity Management System</p>
+        </div>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% elif category == 'warning' %}warning{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                        <i class="bi bi-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Login Form -->
+        <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+            <!-- Username Input -->
+            <div class="form-floating">
+                <input type="text" class="form-control" id="username" name="username" placeholder="请输入用户名" required>
+                <label for="username"><i class="bi bi-person"></i> 用户名</label>
+            </div>
+            
+            <!-- Password Input -->
+            <div class="form-floating">
+                <input type="password" class="form-control" id="password" name="password" placeholder="请输入密码" required>
+                <label for="password"><i class="bi bi-lock"></i> 密码</label>
+            </div>
+            
+            <!-- Login Button -->
+            <button class="btn btn-login" type="submit">
+                <i class="bi bi-box-arrow-in-right"></i> 登录系统
+            </button>
+        </form>
+        
+        <!-- Demo Accounts -->
+        <div class="demo-accounts">
+            <h6><i class="bi bi-info-circle"></i> 演示账户</h6>
+            
+            <!-- Student Accounts -->
+            <div class="demo-account-item" onclick="quickLogin('张三', 'password123')">
+                <div class="demo-info">
+                    <div class="demo-name">张三</div>
+                    <div class="demo-role">学生 - 计算机学院</div>
+                </div>
+                <button type="button" class="demo-login-btn">快速登录</button>
+            </div>
+            
+            <div class="demo-account-item" onclick="quickLogin('李四', 'password123')">
+                <div class="demo-info">
+                    <div class="demo-name">李四</div>
+                    <div class="demo-role">学生 - 计算机学院</div>
+                </div>
+                <button type="button" class="demo-login-btn">快速登录</button>
+            </div>
+            
+            <!-- Teacher Accounts -->
+            <div class="demo-account-item" onclick="quickLogin('陈老师', 'teacher123')">
+                <div class="demo-info">
+                    <div class="demo-name">陈老师</div>
+                    <div class="demo-role">教师 - 计算机学院</div>
+                </div>
+                <button type="button" class="demo-login-btn">快速登录</button>
+            </div>
+            
+            <!-- Admin Account -->
+            <div class="demo-account-item" onclick="quickLogin('管理员', 'admin123')">
+                <div class="demo-info">
+                    <div class="demo-name">管理员</div>
+                    <div class="demo-role">管理员 - 学生处</div>
+                </div>
+                <button type="button" class="demo-login-btn">快速登录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Quick login function for demo accounts
+        function quickLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            
+            // Optional: Auto-submit form
+            // document.getElementById('loginForm').submit();
+            
+            // Visual feedback
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            usernameInput.classList.add('is-valid');
+            passwordInput.classList.add('is-valid');
+            
+            setTimeout(() => {
+                usernameInput.classList.remove('is-valid');
+                passwordInput.classList.remove('is-valid');
+            }, 2000);
+        }
+        
+        // Form validation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                e.preventDefault();
+                alert('请输入用户名和密码');
+                return false;
+            }
+        });
+        
+        // Add floating label animation
+        document.querySelectorAll('.form-floating input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    this.parentElement.classList.remove('focused');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
