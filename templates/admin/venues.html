@@ -113,35 +113,43 @@
         </div>
     </div>
 
-    <!-- 今日预约时间表 -->
+    <!-- 场地预约列表 -->
     <div class="card mt-4">
         <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>今日场地使用时间表</h5>
+            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>场地预约信息</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>时间段</th>
-                            {% for venue in venues %}
-                            <th>{{ venue.venue_name }}</th>
-                            {% endfor %}
+                            <th>场地名称</th>
+                            <th>活动名称</th>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                            <th>预计人数</th>
+                            <th>状态</th>
+                            <th>备注</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for hour in range(8, 22) %}
+                        {% for booking in venue_bookings %}
                         <tr>
-                            <td>{{ '%02d:00' % hour }}</td>
-                            {% for venue in venues %}
-                            <td class="venue-timeslot" data-venue-id="{{ venue.venue_id }}" data-hour="{{ hour }}">
-                                {% if venue.bookings.get(hour) %}
-                                <div class="booking-block" style="background-color: #e3f2fd;">
-                                    {{ venue.bookings[hour].activity_name }}
-                                </div>
+                            <td>{{ booking.venue_name }}</td>
+                            <td>{{ booking.activity_name }}</td>
+                            <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ booking.expected_participants }}人</td>
+                            <td>
+                                {% if booking.booking_status == 'approved' %}
+                                <span class="badge bg-success">已通过</span>
+                                {% elif booking.booking_status == 'pending' %}
+                                <span class="badge bg-warning">待审核</span>
+                                {% else %}
+                                <span class="badge bg-danger">已拒绝</span>
                                 {% endif %}
                             </td>
-                            {% endfor %}
+                            <td>{{ booking.notes or '-' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -186,6 +194,140 @@
         </div>
     </div>
 </div>
+
+<!-- 场地详情模态框 -->
+<div class="modal fade" id="venueDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">场地详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td width="30%"><strong>场地名称：</strong></td>
+                                <td id="detailVenueName"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>位置：</strong></td>
+                                <td id="detailLocation"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>容量：</strong></td>
+                                <td id="detailCapacity"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>设施：</strong></td>
+                                <td id="detailFacilities"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>状态：</strong></td>
+                                <td id="detailStatus"></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>未来7天预约情况</h6>
+                        <div id="detailBookings" class="list-group">
+                            <!-- 预约列表将通过JavaScript动态填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑场地模态框 -->
+<div class="modal fade" id="editVenueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑场地</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editVenueForm">
+                    <input type="hidden" name="venue_id" id="editVenueId">
+                    <div class="mb-3">
+                        <label class="form-label">场地名称</label>
+                        <input type="text" class="form-control" name="venue_name" id="editVenueName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">位置</label>
+                        <input type="text" class="form-control" name="location" id="editLocation" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">容量（人数）</label>
+                        <input type="number" class="form-control" name="capacity" id="editCapacity" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">设施（用逗号分隔）</label>
+                        <input type="text" class="form-control" name="facilities" id="editFacilities">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">状态</label>
+                        <select class="form-select" name="status" id="editStatus" required>
+                            <option value="available">可用</option>
+                            <option value="maintenance">维护中</option>
+                            <option value="unavailable">不可用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditVenue()" id="editVenueSaveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 场地预约模态框 -->
+<div class="modal fade" id="bookVenueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">场地预约</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="bookVenueForm">
+                    <input type="hidden" name="venue_id" id="bookVenueId">
+                    <div class="mb-3">
+                        <label class="form-label">活动名称</label>
+                        <input type="text" class="form-control" name="activity_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">开始时间</label>
+                        <input type="datetime-local" class="form-control" name="start_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">结束时间</label>
+                        <input type="datetime-local" class="form-control" name="end_time" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">预计人数</label>
+                        <input type="number" class="form-control" name="expected_participants" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">备注</label>
+                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitBookVenue()">提交预约</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_css %}
@@ -221,7 +363,114 @@
 
 {% block extra_js %}
 <script>
+// 定义为全局函数
+window.submitEditVenue = function() {
+    const form = document.getElementById('editVenueForm');
+    const formData = new FormData(form);
+    const venueId = formData.get('venue_id');
+    
+    // 构建要发送的数据对象
+    const data = {
+        venue_name: formData.get('venue_name'),
+        location: formData.get('location'),
+        capacity: parseInt(formData.get('capacity')), // 确保capacity是数字
+        facilities: formData.get('facilities'),
+        status: formData.get('status')
+    };
+    
+    // 验证必填字段
+    if (!data.venue_name || !data.location || !data.capacity) {
+        alert('请填写所有必填字段');
+        return;
+    }
+    
+    fetch(`{{ url_for("admin_venues.update_venue", venue_id=0) }}`.replace('0', venueId), {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            alert('场地信息更新成功！');
+            location.reload();
+        } else {
+            alert('更新失败：' + (data.message || '未知错误'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新失败：' + error.message);
+    });
+};
+
+// 定义为全局函数
+window.submitBookVenue = function() {
+    const form = document.getElementById('bookVenueForm');
+    const formData = new FormData(form);
+    const venueId = formData.get('venue_id');
+    
+    // 构建要发送的数据对象
+    const data = {
+        activity_name: formData.get('activity_name'),
+        start_time: formData.get('start_time'),
+        end_time: formData.get('end_time'),
+        expected_participants: parseInt(formData.get('expected_participants')),
+        notes: formData.get('notes') || ''
+    };
+    
+    // 验证必填字段
+    if (!data.activity_name || !data.start_time || !data.end_time || !data.expected_participants) {
+        alert('请填写所有必填字段');
+        return;
+    }
+    
+    fetch(`{{ url_for("admin_venues.book_venue", venue_id=0) }}`.replace('0', venueId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            alert('场地预约成功！');
+            location.reload();
+        } else {
+            alert('预约失败：' + (data.message || '未知错误'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('预约失败：' + error.message);
+    });
+};
+
+// 确保DOM加载完成后绑定事件
 document.addEventListener('DOMContentLoaded', function() {
+    // 为编辑表单添加提交事件处理
+    document.getElementById('editVenueForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // 阻止表单默认提交
+    });
+
+    // 为预约表单添加提交事件处理
+    document.getElementById('bookVenueForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // 阻止表单默认提交
+    });
+
     // 添加场地表单提交
     window.submitAddVenue = function() {
         const form = document.getElementById('addVenueForm');
@@ -261,39 +510,87 @@ document.addEventListener('DOMContentLoaded', function() {
                 showVenueDetails(venueId);
                 break;
             case 'edit':
-                editVenue(venueId);
+                showEditVenue(venueId);
                 break;
             case 'bookings':
-                showBookings(venueId);
+                showBookVenue(venueId);
                 break;
         }
     });
 
-    // 查看场地详情
+    // 场地详情
     function showVenueDetails(venueId) {
-        fetch('{{ url_for("admin_venues.get_venue_details", venue_id=0) }}'.replace('0', venueId))
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // 实现详情显示逻辑
-                console.log(data.venue);
-            } else {
-                alert('获取详情失败：' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('获取详情失败：' + error.message);
-        });
+        fetch(`{{ url_for("admin_venues.get_venue_details", venue_id=0) }}`.replace('0', venueId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const venue = data.venue;
+                    document.getElementById('detailVenueName').textContent = venue.venue_name;
+                    document.getElementById('detailLocation').textContent = venue.location;
+                    document.getElementById('detailCapacity').textContent = venue.capacity + '人';
+                    document.getElementById('detailFacilities').textContent = venue.facilities;
+                    document.getElementById('detailStatus').textContent = getStatusText(venue.status);
+                    
+                    // 显示预约信息
+                    const bookingsHtml = data.bookings.map(booking => `
+                        <div class="list-group-item">
+                            <h6 class="mb-1">${booking.activity_name}</h6>
+                            <p class="mb-1">
+                                时间：${new Date(booking.start_time).toLocaleString()} - 
+                                ${new Date(booking.end_time).toLocaleString()}
+                            </p>
+                        </div>
+                    `).join('');
+                    document.getElementById('detailBookings').innerHTML = bookingsHtml || '<p class="text-muted">暂无预约</p>';
+                    
+                    new bootstrap.Modal(document.getElementById('venueDetailsModal')).show();
+                } else {
+                    alert('获取场地信息失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('获取场地信息失败：' + error.message);
+            });
     }
 
-    // 编辑场地信息
-    function editVenue(venueId) {
-        // 实现编辑功能
+    // 编辑场地
+    function showEditVenue(venueId) {
+        fetch(`{{ url_for("admin_venues.get_venue_details", venue_id=0) }}`.replace('0', venueId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const venue = data.venue;
+                    document.getElementById('editVenueId').value = venue.venue_id;
+                    document.getElementById('editVenueName').value = venue.venue_name;
+                    document.getElementById('editLocation').value = venue.location;
+                    document.getElementById('editCapacity').value = venue.capacity;
+                    document.getElementById('editFacilities').value = venue.facilities;
+                    document.getElementById('editStatus').value = venue.status;
+                    
+                    new bootstrap.Modal(document.getElementById('editVenueModal')).show();
+                } else {
+                    alert('获取场地信息失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('获取场地信息失败：' + error.message);
+            });
     }
 
-    // 查看场地预约
-    function showBookings(venueId) {
-        // 实现预约查看功能
+    // 场地预约
+    function showBookVenue(venueId) {
+        document.getElementById('bookVenueId').value = venueId;
+        new bootstrap.Modal(document.getElementById('bookVenueModal')).show();
+    }
+
+    // 状态文本转换
+    function getStatusText(status) {
+        const statusMap = {
+            'available': '可用',
+            'maintenance': '维护中',
+            'unavailable': '不可用'
+        };
+        return statusMap[status] || status;
     }
 });
 </script>

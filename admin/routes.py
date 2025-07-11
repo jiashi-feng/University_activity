@@ -173,4 +173,4 @@ def update_password():
     conn.close()
     
     flash('密码修改成功', 'success')
-    return redirect(url_for('admin.profile')) 
+    return redirect(url_for('admin.profile'))
