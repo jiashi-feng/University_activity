@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}教师个人中心 - 校园活动管理系统{% endblock %}
+{% block content %}
+<!-- 教师个人中心页面主容器 -->
+<div class="row">
+  <div class="col-auto" style="padding-right:0; height: calc(100vh - 55px);">
+    {% include 'teacher/bash.html' %}
+  </div>
+  <div class="col" style="margin-left:240px;">
+    <div class="main-content">
+      <!-- 页面标题 -->
+      <h2 class="mb-4"><i class="bi bi-person-circle"></i> 教师个人中心</h2>
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="mb-3 text-primary">基础信息</h5>
+          <!-- 基础信息展示区块 -->
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>姓名：</strong> {{ teacher.name }}</div>
+            <div class="col-md-4"><strong>学院：</strong> {{ teacher.college   }}</div>
+            <div class="col-md-4"><strong>工号：</strong> {{ teacher.employee_number   }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>职位：</strong> {{ teacher.position   }}</div>
+            <div class="col-md-4"><strong>联系电话：</strong> {{ teacher.phone   }}</div>
+            <div class="col-md-4"><strong>是否管理员：</strong> {{ '是' if teacher.is_admin else '否' }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-4"><strong>注册时间：</strong> {{ teacher.created_at   }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

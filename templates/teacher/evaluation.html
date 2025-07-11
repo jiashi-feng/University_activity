@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'teacher/bash.html' %}
+<div class="container mt-4" style="margin-left: 240px;">
+  <!-- 页面标题和功能按钮区 -->
+  <h2 class="mb-4"><i class="bi bi-star"></i> 活动评分评价</h2>
+  <!-- 功能按钮区 -->
+  <div class="mb-4">
+    <button id="activityEvalBtn" class="btn btn-primary me-3">活动评价</button>
+    <button id="organizerEvalBtn" class="btn btn-secondary">组织者评分评语</button>
+  </div>
+
+  <!-- 活动评价区块 -->
+  <div id="activityEvalSection">
+    <h4 class="mb-3">已完成活动评价</h4>
+    <div class="table-responsive">
+      <!-- 已完成活动评价表格 -->
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>活动名称</th>
+            <th>组织者</th>
+            <th>所属学院</th>
+            <th>开始时间</th>
+            <th>结束时间</th>
+            <th>参与人数</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="activityEvalTableBody">
+          {% for activity in completed_activities %}
+          <tr>
+            <td>{{ activity.activity_name }}</td>
+            <td>{{ activity.organizer_name }}</td>
+            <td>{{ activity.college }}</td>
+            <td>{{ activity.start_time }}</td>
+            <td>{{ activity.end_time }}</td>
+            <td>{{ activity.participant_count }}/{{ activity.max_participants }}</td>
+            <td>
+              <button class="btn btn-info btn-sm view-evaluations-btn" 
+                      data-activity-id="{{ activity.activity_id }}"
+                      data-activity-name="{{ activity.activity_name }}">
+                查看评价
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 组织者评分评语区块 -->
+  <div id="organizerEvalSection" style="display: none;">
+    <h4 class="mb-3">组织者评分评语</h4>
+    <div class="table-responsive">
+      <!-- 组织者评分评语表格 -->
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>活动名称</th>
+            <th>活动状态</th>
+            <th>活动组织者</th>
+            <th>学院</th>
+            <th>参与者评价查看</th>
+            <th>评语</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="organizerEvalTableBody">
+          {% for organizer in organizer_activities %}
+          <tr>
+            <td>{{ organizer.activity_name }}</td>
+            <td>
+              {% if organizer.status == 'completed' %}
+                <span class="badge bg-success">已完成</span>
+              {% elif organizer.status == 'in_progress' %}
+                <span class="badge bg-warning">进行中</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ organizer.status }}</span>
+              {% endif %}
+            </td>
+            <td>{{ organizer.organizer_name }}</td>
+            <td>{{ organizer.college }}</td>
+            <td>
+              <button class="btn btn-outline-info btn-sm view-participant-evals-btn"
+                      data-activity-id="{{ organizer.activity_id }}"
+                      data-activity-name="{{ organizer.activity_name }}">
+                查看评价
+              </button>
+            </td>
+            <td>
+              {% if organizer.teacher_comment %}
+                <span class="badge bg-primary">已评分</span><br>
+                <small>{{ organizer.teacher_comment }}</small>
+              {% else %}
+                <span class="badge bg-secondary">未评分</span>
+              {% endif %}
+            </td>
+            <td>
+              <button class="btn btn-warning btn-sm rate-organizer-btn"
+                      data-organizer-id="{{ organizer.organizer_id }}"
+                      data-activity-id="{{ organizer.activity_id }}"
+                      data-organizer-name="{{ organizer.organizer_name }}"
+                      data-activity-name="{{ organizer.activity_name }}">
+                评分
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 活动评价详情弹窗区块 -->
+<div class="modal fade" id="activityEvalModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">活动评价详情</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 id="activityEvalTitle"></h6>
+        <div id="activityEvalContent">
+          <!-- 评价内容将通过AJAX加载 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 参与者评价详情弹窗区块 -->
+<div class="modal fade" id="participantEvalModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">参与者评价详情</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 id="participantEvalTitle"></h6>
+        <div id="participantEvalContent">
+          <!-- 参与者评价内容将通过AJAX加载 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 组织者评分弹窗区块 -->
+<div class="modal fade" id="organizerRatingModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">组织者评分</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="organizerRatingForm">
+          <input type="hidden" id="ratingActivityId" name="activity_id">
+          <input type="hidden" id="ratingOrganizerId" name="organizer_id">
+          <div class="mb-3">
+            <label class="form-label">活动：<span id="ratingActivityName"></span></label>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">组织者：<span id="ratingOrganizerName"></span></label>
+          </div>
+          <div class="mb-3">
+            <label for="ratingScore" class="form-label">评分 (1-10分)</label>
+            <input type="number" class="form-control" id="ratingScore" name="score" 
+                   min="1" max="10" required>
+          </div>
+          <div class="mb-3">
+            <label for="ratingComment" class="form-label">评语</label>
+            <textarea class="form-control" id="ratingComment" name="comment" 
+                      rows="4" placeholder="请输入对组织者的评价和建议..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="submitRatingBtn">提交评分</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 活动评分评价页面JS切换区块，控制不同功能区显示
+const activityEvalBtn = document.getElementById('activityEvalBtn');
+const organizerEvalBtn = document.getElementById('organizerEvalBtn');
+const activityEvalSection = document.getElementById('activityEvalSection');
+const organizerEvalSection = document.getElementById('organizerEvalSection');
+// 切换到活动评价区
+activityEvalBtn.onclick = () => {
+  activityEvalSection.style.display = '';
+  organizerEvalSection.style.display = 'none';
+  activityEvalBtn.classList.add('btn-primary');
+  activityEvalBtn.classList.remove('btn-secondary');
+  organizerEvalBtn.classList.remove('btn-primary');
+  organizerEvalBtn.classList.add('btn-secondary');
+};
+// 切换到组织者评分评语区
+organizerEvalBtn.onclick = () => {
+  activityEvalSection.style.display = 'none';
+  organizerEvalSection.style.display = '';
+  organizerEvalBtn.classList.add('btn-primary');
+  organizerEvalBtn.classList.remove('btn-secondary');
+  activityEvalBtn.classList.remove('btn-primary');
+  activityEvalBtn.classList.add('btn-secondary');
+};
+// 查看活动评价
+document.querySelectorAll('.view-evaluations-btn').forEach(btn => {
+  btn.onclick = function() {
+    const activityId = this.getAttribute('data-activity-id');
+    const activityName = this.getAttribute('data-activity-name');
+    
+    document.getElementById('activityEvalTitle').textContent = activityName;
+    
+    // 发送AJAX请求获取评价详情
+    fetch(`/teacher/activity-evaluations/${activityId}`)
+      .then(response => response.json())
+      .then(data => {
+        let content = '';
+        if (data.evaluations && data.evaluations.length > 0) {
+          data.evaluations.forEach(eval => {
+            content += `
+              <div class="card mb-3">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>${eval.participant_name}</strong>
+                    <span class="badge bg-primary">${eval.rating}/5分</span>
+                  </div>
+                  <p class="card-text">${eval.comment || '无评价内容'}</p>
+                  <small class="text-muted">评价时间：${eval.created_at}</small>
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          content = '<p class="text-muted">暂无评价</p>';
+        }
+        document.getElementById('activityEvalContent').innerHTML = content;
+        
+        const modal = new bootstrap.Modal(document.getElementById('activityEvalModal'));
+        modal.show();
+      });
+  };
+});
+
+// 查看参与者评价
+document.querySelectorAll('.view-participant-evals-btn').forEach(btn => {
+  btn.onclick = function() {
+    const activityId = this.getAttribute('data-activity-id');
+    const activityName = this.getAttribute('data-activity-name');
+    
+    document.getElementById('participantEvalTitle').textContent = activityName;
+    
+    // 发送AJAX请求获取参与者评价详情
+    fetch(`/teacher/participant-evaluations/${activityId}`)
+      .then(response => response.json())
+      .then(data => {
+        let content = '';
+        if (data.evaluations && data.evaluations.length > 0) {
+          data.evaluations.forEach(eval => {
+            content += `
+              <div class="card mb-3">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>${eval.participant_name}</strong>
+                    <span class="badge bg-primary">${eval.rating}/5分</span>
+                  </div>
+                  <p class="card-text">${eval.comment || '无评价内容'}</p>
+                  <small class="text-muted">评价时间：${eval.created_at}</small>
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          content = '<p class="text-muted">暂无参与者评价</p>';
+        }
+        document.getElementById('participantEvalContent').innerHTML = content;
+        
+        const modal = new bootstrap.Modal(document.getElementById('participantEvalModal'));
+        modal.show();
+      });
+  };
+});
+
+// 组织者评分
+document.querySelectorAll('.rate-organizer-btn').forEach(btn => {
+  btn.onclick = function() {
+    const activityId = this.getAttribute('data-activity-id');
+    const organizerId = this.getAttribute('data-organizer-id');
+    const activityName = this.getAttribute('data-activity-name');
+    // 修正：确保组织者姓名取自 data-organizer-name 属性
+    const organizerName = this.getAttribute('data-organizer-name');
+    
+    document.getElementById('ratingActivityId').value = activityId;
+    document.getElementById('ratingOrganizerId').value = organizerId;
+    document.getElementById('ratingActivityName').textContent = activityName;
+    document.getElementById('ratingOrganizerName').textContent = organizerName; // 动态赋值
+    
+    const modal = new bootstrap.Modal(document.getElementById('organizerRatingModal'));
+    modal.show();
+  };
+});
+
+// 提交组织者评分
+document.getElementById('submitRatingBtn').onclick = function() {
+  const form = document.getElementById('organizerRatingForm');
+  const formData = new FormData(form);
+  
+  fetch('/teacher/submit-organizer-rating', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('评分提交成功！');
+      location.reload(); // 刷新页面
+    } else {
+      alert('评分提交失败：' + data.message);
+    }
+  });
+};
+
+// 高亮当前页面导航项
+document.addEventListener('DOMContentLoaded', function() {
+  const currentNav = document.getElementById('nav-evaluation');
+  if (currentNav) {
+    currentNav.classList.add('active');
+  }
+});
+</script>
+
+<style>
+@media (max-width: 768px) {
+  .container {
+    margin-left: 0 !important;
+    padding-left: 15px !important;
+  }
+  .teacher-allnav {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+  }
+}
+</style>
+{% endblock %} 
