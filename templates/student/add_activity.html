@@ -83,28 +83,28 @@
                     </div>
                     <ul class="nav flex-column w-100 mt-5 px-2">
                         <li class="nav-item mb-2">
-                            <a class="nav-link active" href="/student/add_activity">活动添加</a>
+                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">进行活动</a>
+                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">已结束活动</a>
+                            <a class="nav-link {% if request.path == '/student/finished_activity' %}active{% endif %}" href="/student/finished_activity">已结束活动</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">个人信息查看</a>
+                            <a class="nav-link {% if request.path == '/student/profile_view' %}active{% endif %}" href="/student/profile_view">个人信息查看</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">个人信息修改</a>
+                            <a class="nav-link {% if request.path == '/student/profile_edit' %}active{% endif %}" href="/student/profile_edit">个人信息修改</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">个人课表</a>
+                            <a class="nav-link {% if request.path == '/student/schedule' %}active{% endif %}" href="/student/schedule">个人课表</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">活动请假</a>
+                            <a class="nav-link {% if request.path == '/student/leave' %}active{% endif %}" href="/student/leave">活动请假</a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link" href="#">消息</a>
+                            <a class="nav-link {% if request.path == '/student/message' %}active{% endif %}" href="/student/message">消息</a>
                         </li>
                     </ul>
                 </div>
