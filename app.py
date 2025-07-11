@@ -3,69 +3,42 @@ import sqlite3
 from datetime import datetime, timedelta
 import os
 from functools import wraps
+from teacher.dashboard import bp as teacher_dashboard_bp
+from teacher.stats import bp as teacher_stats_bp
+from teacher.evaluation import bp as teacher_evaluation_bp
+from teacher.account import bp as teacher_account_bp
+from teacher.personcenter import bp as teacher_personcenter_bp
+from teacher.funding import bp as teacher_funding_bp
+from teacher.approval import bp as teacher_approval_bp
+from extensions import get_db, init_db, login_required, role_required, admin_required
+from admin.routes import admin_bp  # 导入管理员蓝图
+from admin.venues import venues_bp
+from admin.activity_routes import admin_activity
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # 生产环境请使用更安全的密钥
+app.secret_key = 'tP6Xe8mZ3vQJyKfBwN2Lc7sD1gH5Yr9VnM4kT0xGpU'  # 添加密钥用于session
+
+# 注册蓝图
+app.register_blueprint(admin_bp)  # admin_bp已经有/admin前缀
+app.register_blueprint(venues_bp)  # venues_bp已经有/admin前缀
+app.register_blueprint(admin_activity, url_prefix='/admin')
 
 # 数据库文件路径
 DATABASE = 'University_activit.db'
 
 # 数据库连接封装
-def get_db():
-    """获取数据库连接"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row  # 使查询结果可以像字典一样访问
-    return conn
-
-def init_db():
-    """初始化数据库"""
-    if not os.path.exists(DATABASE):
-        # 如果数据库不存在，运行初始化脚本
-        from init_db import init_database
-        init_database()
-        print("数据库已初始化")
 
 # 装饰器：登录验证
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('请先登录', 'error')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 # 装饰器：角色验证
-def role_required(role):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if 'user_type' not in session or session['user_type'] != role:
-                flash('权限不足', 'error')
-                return redirect(url_for('login'))
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
 
 # 装饰器：管理员验证
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_type' not in session or session['user_type'] != 'teacher':
-            flash('权限不足', 'error')
-            return redirect(url_for('login'))
-        
-        # 检查是否为管理员
-        db = get_db()
-        teacher = db.execute(
-            'SELECT is_admin FROM teachers WHERE teacher_id = ?',
-            (session['user_id'],)
-        ).fetchone()
-        db.close()
-        
-        if not teacher or not teacher['is_admin']:
+        if 'user_type' not in session or session['user_type'] != 'teacher' or not session.get('is_admin'):
             flash('需要管理员权限', 'error')
-            return redirect(url_for('teacher_dashboard'))
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -78,7 +51,7 @@ def index():
         if user_type == 'student':
             return redirect(url_for('student_dashboard'))
         elif user_type == 'teacher':
-            return redirect(url_for('teacher_dashboard'))
+            return redirect(url_for('teacher_dashboard.dashboard'))
     return redirect(url_for('login'))
 
 # 登录路由
@@ -108,11 +81,22 @@ def login():
                 session['username'] = user['name']
                 session['college'] = user['college']
                 
-                # 根据用户类型重定向
-                if user['user_type'] == 'student':
+                # 如果是教师，检查是否为管理员
+                if user['user_type'] == 'teacher':
+                    teacher = db.execute(
+                        'SELECT is_admin FROM teachers WHERE teacher_id = ?',
+                        (user['user_id'],)
+                    ).fetchone()
+                    
+                    if teacher and teacher['is_admin']:
+                        session['is_admin'] = True
+                        return redirect(url_for('admin.dashboard'))  # 使用蓝图的URL
+                    else:
+                        session['is_admin'] = False
+                        return redirect(url_for('teacher_dashboard.dashboard'))
+                elif user['user_type'] == 'student':
+                    session['is_admin'] = False
                     return redirect(url_for('student_dashboard'))
-                elif user['user_type'] == 'teacher':
-                    return redirect(url_for('teacher_dashboard'))
             else:
                 flash('用户名或密码错误', 'error')
         
@@ -822,150 +806,54 @@ def student_message():
 
 # ==================== 教师路由 ====================
 
-@app.route('/teacher/dashboard')
-@login_required
-@role_required('teacher')
-def teacher_dashboard():
-    """教师主页"""
-    db = get_db()
-    try:
-        # 获取教师信息
-        teacher_info = db.execute('''
-            SELECT t.*, u.name, u.college 
-            FROM teachers t
-            JOIN users u ON t.teacher_id = u.user_id
-            WHERE t.teacher_id = ?
-        ''', (session['user_id'],)).fetchone()
-        
-        # 获取我指导的活动
-        supervised_activities = db.execute('''
-            SELECT a.*, u.name as organizer_name
-            FROM activities a
-            JOIN users u ON a.organizer_id = u.user_id
-            WHERE a.supervisor_id = ?
-            ORDER BY a.created_at DESC
-        ''', (session['user_id'],)).fetchall()
-        
-        # 如果是管理员，获取待审核的活动
-        pending_activities = []
-        if teacher_info and teacher_info['is_admin']:
-            pending_activities = db.execute('''
-                SELECT a.*, u.name as organizer_name
-                FROM activities a
-                JOIN users u ON a.organizer_id = u.user_id
-                WHERE a.status = 'pending_review'
-                ORDER BY a.created_at DESC
-            ''').fetchall()
-        
-        return render_template('teacher/dashboard.html',
-                             teacher_info=teacher_info,
-                             supervised_activities=supervised_activities,
-                             pending_activities=pending_activities)
-    
-    except Exception as e:
-        flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('teacher/dashboard.html',
-                             teacher_info=None,
-                             supervised_activities=[],
-                             pending_activities=[])
-    finally:
-        db.close()
-
-@app.route('/teacher/approve_activity/<int:activity_id>', methods=['POST'])
-@login_required
-@admin_required
-def approve_activity(activity_id):
-    """管理员审批活动"""
-    db = get_db()
-    try:
-        action = request.form.get('action')
-        allocated_funds = float(request.form.get('allocated_funds', 0))
-        
-        if action == 'approve':
-            # 批准活动
-            db.execute('''
-                UPDATE activities 
-                SET status = 'approved', admin_id = ?, allocated_funds = ?, remaining_funds = ?
-                WHERE activity_id = ?
-            ''', (session['user_id'], allocated_funds, allocated_funds, activity_id))
-            flash('活动已批准', 'success')
-        
-        elif action == 'reject':
-            # 拒绝活动
-            db.execute('''
-                UPDATE activities 
-                SET status = 'cancelled', admin_id = ?
-                WHERE activity_id = ?
-            ''', (session['user_id'], activity_id))
-            flash('活动已拒绝', 'info')
-        
-        db.commit()
-        
-    except Exception as e:
-        db.rollback()
-        flash(f'操作失败：{str(e)}', 'error')
-    finally:
-        db.close()
-    
-    return redirect(url_for('teacher_dashboard'))
-
-@app.route('/teacher/funding')
-@login_required
-@role_required('teacher')
-def teacher_funding():
-    """教师资金拨款界面"""
-    db = get_db()
-    try:
-        # 获取我指导的活动的资金信息
-        funding_activities = db.execute('''
-            SELECT a.*, u.name as organizer_name
-            FROM activities a
-            JOIN users u ON a.organizer_id = u.user_id
-            WHERE a.supervisor_id = ? AND a.status = 'approved'
-            ORDER BY a.start_time DESC
-        ''', (session['user_id'],)).fetchall()
-        
-        return render_template('teacher/funding.html',
-                             funding_activities=funding_activities)
-    
-    except Exception as e:
-        flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('teacher/funding.html',
-                             funding_activities=[])
-    finally:
-        db.close()
+# 注册所有教师子模块 Blueprint
+app.register_blueprint(teacher_dashboard_bp)
+app.register_blueprint(teacher_stats_bp)
+app.register_blueprint(teacher_evaluation_bp)
+app.register_blueprint(teacher_account_bp)
+app.register_blueprint(teacher_personcenter_bp)
+app.register_blueprint(teacher_funding_bp)
+app.register_blueprint(teacher_approval_bp)
 
 # ==================== 管理员路由 ====================
 
-@app.route('/admin/venues')
+@app.route('/admin/dashboard')
 @login_required
 @admin_required
-def admin_venues():
-    """管理员场地管理"""
+def admin_dashboard():
+    """管理员主页"""
     db = get_db()
     try:
-        # 获取所有场地信息
-        venues = db.execute('SELECT * FROM venues ORDER BY venue_name').fetchall()
+        # 获取管理员信息
+        admin_info = db.execute('''
+            SELECT t.*, u.name, u.college 
+            FROM teachers t
+            JOIN users u ON t.teacher_id = u.user_id
+            WHERE t.teacher_id = ? AND t.is_admin = 1
+        ''', (session['user_id'],)).fetchone()
         
-        # 获取场地预约信息
-        venue_bookings = db.execute('''
-            SELECT vb.*, v.venue_name, a.activity_name, u.name as organizer_name
-            FROM venue_bookings vb
-            JOIN venues v ON vb.venue_id = v.venue_id
-            JOIN activities a ON vb.activity_id = a.activity_id
-            JOIN users u ON vb.organizer_id = u.user_id
-            ORDER BY vb.start_time DESC
+        # 获取所有待审核的活动
+        pending_activities = db.execute('''
+            SELECT a.*, u.name as organizer_name, t.name as supervisor_name
+            FROM activities a
+            JOIN users u ON a.organizer_id = u.user_id
+            LEFT JOIN users t ON a.supervisor_id = t.user_id
+            WHERE a.status = 'pending_review'
+            ORDER BY a.created_at DESC
         ''').fetchall()
         
-        return render_template('admin/venues.html',
-                             venues=venues,
-                             venue_bookings=venue_bookings)
+
+        return render_template('admin/dashboard.html',
+                             admin_info=admin_info,
+                             pending_activities=pending_activities,
+                             )
     
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('admin/venues.html',
-                             venues=[],
-                             venue_bookings=[])
+        return render_template('admin/dashboard.html',
+                             admin_info=None,
+                             pending_activities=[],
+                             )
     finally:
         db.close()
 
@@ -989,6 +877,121 @@ def api_activities():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        db.close()
+
+# ==================== 教师评价详情API ====================
+
+@app.route('/teacher/activity-evaluations/<int:activity_id>')
+@login_required
+@role_required('teacher')
+def get_activity_evaluations(activity_id):
+    """获取某活动的评价详情（面向教师）"""
+    db = get_db()
+    try:
+        # 假设评价表为 organizer_evaluations，评价人为老师
+        evaluations = db.execute('''
+            SELECT oe.*, u.name as evaluator_name
+            FROM organizer_evaluations oe
+            JOIN users u ON oe.evaluator_id = u.user_id
+            WHERE oe.activity_id = ?
+        ''', (activity_id,)).fetchall()
+        result = []
+        for row in evaluations:
+            result.append({
+                'evaluation_id': row['evaluation_id'],
+                'activity_id': row['activity_id'],
+                'evaluator_id': row['evaluator_id'],
+                'evaluator_name': row['evaluator_name'],
+                'rating': row['rating'],
+                'comment': row['comment'],
+                'created_at': row['created_at']
+            })
+        return jsonify({'success': True, 'evaluations': result})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e), 'evaluations': []})
+    finally:
+        db.close()
+
+@app.route('/teacher/participant-evaluations/<int:activity_id>')
+@login_required
+@role_required('teacher')
+def get_participant_evaluations(activity_id):
+    """获取某活动下所有参与者的评价详情（面向教师）"""
+    db = get_db()
+    try:
+        # 假设参与者评价表为 activity_participants，评价内容为 comment，评分为 rating
+        evaluations = db.execute('''
+            SELECT ap.*, u.name as participant_name
+            FROM activity_participants ap
+            JOIN users u ON ap.student_id = u.user_id
+            WHERE ap.activity_id = ? AND ap.comment IS NOT NULL
+        ''', (activity_id,)).fetchall()
+        result = []
+        for row in evaluations:
+            result.append({
+                'participant_id': row['student_id'],
+                'participant_name': row['participant_name'],
+                'rating': row['rating'],
+                'comment': row['comment'],
+                'created_at': row['updated_at'] if 'updated_at' in row.keys() else None
+            })
+        return jsonify({'success': True, 'evaluations': result})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e), 'evaluations': []})
+    finally:
+        db.close()
+
+@app.route('/teacher/approve_progress/<int:progress_id>', methods=['POST'])
+@login_required
+@role_required('teacher')
+def approve_progress(progress_id):
+    """审批进度（通过/打回/中断）"""
+    db = get_db()
+    try:
+        action = request.form.get('action')  # approve/reject/interrupt
+        if action == 'approve':
+            db.execute('UPDATE activity_progress SET review_status = "approved" WHERE progress_id = ?', (progress_id,))
+        elif action == 'reject':
+            db.execute('UPDATE activity_progress SET review_status = "rejected" WHERE progress_id = ?', (progress_id,))
+        else:
+            return jsonify({'success': False, 'msg': '未知操作'})
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'msg': str(e)})
+    finally:
+        db.close()
+
+@app.route('/teacher/submit-organizer-rating', methods=['POST'])
+@login_required
+@role_required('teacher')
+def submit_organizer_rating():
+    """提交组织者评分"""
+    db = get_db()
+    try:
+        activity_id = request.form.get('activity_id')
+        organizer_id = request.form.get('organizer_id')
+        score_raw = request.form.get('score')
+        comment = request.form.get('comment')
+        evaluator_id = session['user_id']
+        if not score_raw or not score_raw.isdigit():
+            return jsonify({'success': False, 'message': '评分不能为空且必须为数字'})
+        score = int(score_raw)
+        # 分数范围1-10，转为1-5
+        rating = min(5, max(1, round(score / 2)))
+        # 检查是否已评分
+        exists = db.execute('SELECT 1 FROM organizer_evaluations WHERE activity_id = ? AND organizer_id = ? AND evaluator_id = ?', (activity_id, organizer_id, evaluator_id)).fetchone()
+        if exists:
+            db.execute('UPDATE organizer_evaluations SET rating = ?, comment = ?, created_at = datetime("now") WHERE activity_id = ? AND organizer_id = ? AND evaluator_id = ?', (rating, comment, activity_id, organizer_id, evaluator_id))
+        else:
+            db.execute('INSERT INTO organizer_evaluations (activity_id, organizer_id, evaluator_id, rating, comment) VALUES (?, ?, ?, ?, ?)', (activity_id, organizer_id, evaluator_id, rating, comment))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
     finally:
         db.close()
 

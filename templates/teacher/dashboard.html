@@ -1,0 +1,255 @@
+<!-- 活动管理页面主容器 -->
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'teacher/bash.html' %}
+<div class="container mt-4" style="margin-left: 240px;">
+  <!-- 页面标题和功能按钮区 -->
+  <h2 class="mb-4"><i class="bi bi-clipboard-check"></i> 活动管理</h2>
+  <div class="mb-3">
+    <button id="progressBtn" class="btn btn-primary me-2">进度审批</button>
+    <button id="changeBtn" class="btn btn-secondary">更换人员审批</button>
+  </div>
+  <!-- 进度审批区块 -->
+  <div id="progressSection">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>活动名称</th>
+          <th>组织者</th>
+          <th>所属学院</th>
+          <th>进度</th>
+          <th>进行百分比</th>
+          <th>审核状态</th>
+        </tr>
+      </thead>
+      <tbody id="progressTableBody">
+        <!-- 进度审批数据由后端渲染 -->
+        {% for item in progress_list %}
+        <tr>
+          <td>{{ item.activity_name }}</td>
+          <td>{{ item.organizer }}</td>
+          <td>{{ item.college }}</td>
+          <td>{{ item.progress_content }}</td>
+          <td>{{ item.completion_percentage }}%</td>
+          <td>
+            {% if item.review_status == 'pending' %}
+              <button class="btn btn-warning btn-sm review-btn" data-id="{{ item.progress_id }}">未审核</button>
+            {% elif item.review_status == 'approved' %}
+              <span class="badge bg-success">已通过</span>
+            {% elif item.review_status == 'rejected' %}
+              <span class="badge bg-danger">已打回</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <!-- 更换人员审批区块 -->
+  <div id="changeSection" style="display:none;">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>活动名称</th>
+          <th>原组织者</th>
+          <th>新组织者</th>
+          <th>原因</th>
+          <th>申请时间</th>
+          <th>审批状态</th>
+        </tr>
+      </thead>
+      <tbody id="changeTableBody">
+        <!-- 更换人员审批数据由后端渲染 -->
+        {% for item in change_list %}
+        <tr>
+          <td>{{ item.activity_name }}</td>
+          <td>{{ item.original_organizer }}</td>
+          <td>{{ item.new_organizer }}</td>
+          <td>{{ item.reason }}</td>
+          <td>{{ item.requested_at }}</td>
+          <td>
+            {% if item.change_status == 'pending' %}
+              <button class="btn btn-warning btn-sm change-btn" data-id="{{ item.change_id }}">未审核</button>
+            {% elif item.change_status == 'approved' %}
+              <span class="badge bg-success">已通过</span>
+            {% elif item.change_status == 'rejected' %}
+              <span class="badge bg-danger">已打回</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 审核弹窗区块 -->
+  <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reviewModalLabel">进度审批详情</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="reviewDetail"></div>
+          <div id="reviewReasonBox" style="display:none;">
+            <label for="reviewReason" class="form-label">原因：</label>
+            <textarea id="reviewReason" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" id="approveBtn">审核完成</button>
+         
+          <button type="button" class="btn btn-warning" id="rejectBtn">存疑打回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 更换人员弹窗区块 -->
+  <div class="modal fade" id="changeModal" tabindex="-1" aria-labelledby="changeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changeModalLabel">更换人员审批详情</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="changeDetail"></div>
+          <div id="changeReasonBox" style="display:none;">
+            <label for="changeReason" class="form-label">原因：</label>
+            <textarea id="changeReason" class="form-control"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" id="changeApproveBtn">审核完成</button>
+          <button type="button" class="btn btn-warning" id="changeRejectBtn">存疑打回</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 活动管理页面JS切换区块，控制不同功能区显示
+const progressBtn = document.getElementById('progressBtn');
+const changeBtn = document.getElementById('changeBtn');
+const progressSection = document.getElementById('progressSection');
+const changeSection = document.getElementById('changeSection');
+// 切换到进度审批区
+progressBtn.onclick = () => {
+  progressSection.style.display = '';
+  changeSection.style.display = 'none';
+  progressBtn.classList.add('btn-primary');
+  progressBtn.classList.remove('btn-secondary');
+  changeBtn.classList.remove('btn-primary');
+  changeBtn.classList.add('btn-secondary');
+};
+// 切换到更换人员审批区
+changeBtn.onclick = () => {
+  progressSection.style.display = 'none';
+  changeSection.style.display = '';
+  changeBtn.classList.add('btn-primary');
+  changeBtn.classList.remove('btn-secondary');
+  progressBtn.classList.remove('btn-primary');
+  progressBtn.classList.add('btn-secondary');
+};
+// 审核弹窗逻辑（示例，需后端配合AJAX填充详情）
+document.querySelectorAll('.review-btn').forEach(btn => {
+  btn.onclick = function() {
+    const progressId = this.getAttribute('data-id');
+    document.getElementById('reviewDetail').innerText = '';
+    document.getElementById('reviewReasonBox').style.display = 'none';
+    var modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    modal.show();
+    document.getElementById('approveBtn').onclick = function() {
+      fetch(`/teacher/approve_progress/${progressId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=approve'
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          // alert('审核通过');
+          location.reload();
+        } else {
+          alert('操作失败：' + data.msg);
+        }
+      });
+    };
+    
+    document.getElementById('rejectBtn').onclick = function() {
+      fetch(`/teacher/approve_progress/${progressId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=reject'
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          
+          location.reload();
+        } 
+      });
+    };
+  };
+});
+document.querySelectorAll('.change-btn').forEach(btn => {
+  btn.onclick = function() {
+    const changeId = this.getAttribute('data-id');
+    document.getElementById('changeDetail').innerText = '需更换人员继续组织活动';
+    document.getElementById('changeReasonBox').style.display = 'none';
+    var modal = new bootstrap.Modal(document.getElementById('changeModal'));
+    modal.show();
+    document.getElementById('changeApproveBtn').onclick = function() {
+      fetch(`/teacher/approve_organizer_change/${changeId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=approve'
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          
+          location.reload();
+        } else {
+          alert('操作失败：' + data.msg);
+        }
+      });
+    };
+    document.getElementById('changeRejectBtn').onclick = function() {
+      fetch(`/teacher/approve_organizer_change/${changeId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=reject'
+      }).then(res => res.json()).then(data => {
+        if (data.success) {
+          
+          location.reload();
+        } else {
+          alert('操作失败：' + data.msg);
+        }
+      });
+    };
+  };
+});
+// 页面加载后高亮左侧导航
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentNav = document.getElementById('nav-activity');
+    if (currentNav) {
+      currentNav.classList.add('active');
+    }
+  });
+</script>
+
+<style>
+@media (max-width: 768px) {
+  .container {
+    margin-left: 0 !important;
+    padding-left: 15px !important;
+  }
+  .teacher-allnav {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+  }
+}
+</style>
+{% endblock %}
