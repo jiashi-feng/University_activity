@@ -357,6 +357,49 @@ def student_apply():
         db.close()
     return render_template('student/activity_apply.html', skill_options=skill_options)
 
+@app.route('/student/score_entry')
+@login_required
+@role_required('student')
+def score_entry():
+    # 示例数据，实际应从数据库查询
+    scores = [
+        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'input_by': '张三', 'score': 5},
+        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'input_by': '张三', 'score': 4},
+        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'input_by': '张三', 'score': 3},
+    ]
+    return render_template('student/score_entry.html', scores=scores)
+
+@app.route('/student/activity_review')
+@login_required
+@role_required('student')
+def activity_review():
+    # 示例数据，实际应从数据库查询
+    reviews = [
+        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'teacher': '张三'},
+        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'teacher': '张三'},
+        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'teacher': '张三'},
+    ]
+    return render_template('student/activity_review.html', reviews=reviews)
+
+@app.route('/student/notification')
+@login_required
+@role_required('student')
+def notification():
+    # 示例数据，实际应从数据库查询
+    notifications = [
+        {'content': '你的xxx活动申请已通过', 'time': '2020-3-2', 'sender': '负责老师'},
+        {'content': '你的xxx活动资金已分配', 'time': '2020-3-2', 'sender': '负责老师'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
+    ]
+    return render_template('student/notification.html', notifications=notifications)
+
 # ==================== 教师路由 ====================
 
 @app.route('/teacher/dashboard')
