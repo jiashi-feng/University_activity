@@ -365,18 +365,100 @@ def create_activity():
     
     return render_template('student/create_activity.html')
 
-@app.route('/student/apply', methods=['GET'])
+@app.route('/student/apply', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def student_apply():
-    """学生活动申请页面，技能选项从数据库获取"""
+    """学生活动申请页面"""
+    if request.method == 'POST':
+        db = get_db()
+        try:
+            # 获取表单数据
+            activity_name = request.form.get('activity_name')
+            supervisor_name = request.form.get('supervisor')
+            activity_type = request.form.get('activity_type')
+            skills_list = request.form.getlist('skills')
+            activity_start_time = request.form.get('activity_start_time')
+            activity_end_time = request.form.get('activity_end_time')
+            activity_participants = int(request.form.get('activity_participants', 0))
+            activity_desc = request.form.get('activity_desc')
+            
+            # 校验必填
+            if not all([activity_name, supervisor_name, activity_type, skills_list, 
+                       activity_start_time, activity_end_time, activity_participants, activity_desc]):
+                flash('请填写所有必填字段', 'error')
+                return redirect(url_for('student_apply'))
+            
+            # 校验技能多选
+            skills = ','.join(skills_list)
+            
+            # 校验时间
+            start_time = datetime.fromisoformat(activity_start_time.replace('T', ' '))
+            end_time = datetime.fromisoformat(activity_end_time.replace('T', ' '))
+            if start_time >= end_time:
+                flash('结束时间必须晚于开始时间', 'error')
+                return redirect(url_for('student_apply'))
+            if start_time.date() < datetime.now().date():
+                flash('开始时间不能早于今天', 'error')
+                return redirect(url_for('student_apply'))
+            
+            # 校验未完结活动数
+            unfinished_count = db.execute('''
+                SELECT COUNT(*) FROM activities 
+                WHERE organizer_id = ? AND status NOT IN ('completed', 'cancelled') AND end_time > datetime('now')
+            ''', (session['user_id'],)).fetchone()[0]
+            if unfinished_count >= 3:
+                flash('你有超过3个未结束的活动，无法继续申请', 'error')
+                return redirect(url_for('student_apply'))
+            
+            # 查找指导教师
+            supervisor = db.execute('''
+                SELECT user_id FROM users 
+                WHERE name = ? AND user_type = 'teacher'
+            ''', (supervisor_name,)).fetchone()
+            if not supervisor:
+                flash('指导教师不存在，请检查姓名是否正确', 'error')
+                return redirect(url_for('student_apply'))
+            
+            # 活动类型映射
+            db_activity_type = 'indoor' if activity_type in ['学术', '文艺'] else 'outdoor'
+            
+            # 插入活动
+            db.execute('''
+                INSERT INTO activities (
+                    organizer_id, supervisor_id, activity_name, description, 
+                    start_time, end_time, required_skills, max_participants, 
+                    activity_type, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')
+            ''', (session['user_id'], supervisor['user_id'], activity_name, activity_desc,
+                  start_time.strftime('%Y-%m-%d %H:%M:%S'), end_time.strftime('%Y-%m-%d %H:%M:%S'),
+                  skills, activity_participants, db_activity_type))
+            db.commit()
+            flash('活动申请提交成功，等待审核！', 'success')
+            return redirect(url_for('organizer_activities'))
+        except ValueError as e:
+            flash(f'数据格式错误：{str(e)}', 'error')
+        except Exception as e:
+            db.rollback()
+            flash(f'申请提交失败：{str(e)}', 'error')
+        finally:
+            db.close()
+        return redirect(url_for('student_apply'))
     db = get_db()
     try:
         skills = db.execute('SELECT DISTINCT skill_name FROM student_skills').fetchall()
         skill_options = [row['skill_name'] for row in skills]
+        teachers = db.execute('''
+            SELECT name FROM users 
+            WHERE user_type = 'teacher' 
+            ORDER BY name
+        ''').fetchall()
+        teacher_options = [row['name'] for row in teachers]
     finally:
         db.close()
-    return render_template('student/activity_apply.html', skill_options=skill_options)
+    return render_template('student/activity_apply.html', 
+                         skill_options=skill_options,
+                         teacher_options=teacher_options)
 
 @app.route('/student/score_entry', methods=['GET', 'POST'])
 @login_required

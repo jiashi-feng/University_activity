@@ -55,6 +55,18 @@
             <div class="container mt-4">
                 <div class="row justify-content-center mt-5">
                     <div class="col-md-8 col-lg-6">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                        <div class="mb-3">
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% endwith %}
                         <div class="card shadow">
                             <div class="card-header bg-primary text-white">
                                 <h4 class="mb-0"><i class="fa fa-pencil-square me-2"></i>活动申请</h4>
@@ -81,12 +93,13 @@
                                         </select>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="skills" class="form-label">所需技能</label>
-                                        <select class="form-select" id="skills" name="skills" required>
+                                        <label for="skills" class="form-label">所需技能（可多选）</label>
+                                        <select class="form-select" id="skills" name="skills" multiple required>
                                             {% for skill in skill_options %}
                                             <option value="{{ skill }}">{{ skill }}</option>
                                             {% endfor %}
                                         </select>
+                                        <div class="form-text">按住Ctrl或Shift可多选</div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="activity_start_time" class="form-label">活动开始时间</label>
