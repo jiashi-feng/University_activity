@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'teacher/bash.html' %}
+<div class="container mt-4" style="margin-left: 240px;">
+  <!-- 资金管理页面标题和剩余资金展示 -->
+  <h2 class="mb-4"><i class="bi bi-cash-coin"></i> 资金管理</h2>
+  <div class="text-center mb-4">
+    <!-- 剩余资金大字显示 -->
+    <div id="funds-amount" style="font-size: 2.5rem; font-weight: bold; color: #198754;">￥<span id="funds-amount-value">{{ '%.2f' % funds }}</span></div>
+    <div class="text-muted">剩余资金</div>
+  </div>
+  <!-- 顶部功能按钮区 -->
+  <div class="mb-4 text-center">
+    <button id="grantBtn" class="btn btn-primary me-3">奖励发放</button>
+    <button id="allocateBtn" class="btn btn-success me-3">资金分配</button>
+    <button id="historyBtn" class="btn btn-secondary">历史记录</button>
+  </div>
+
+  <!-- 奖励发放区块 -->
+  <div id="grantSection" style="display:none;">
+    <h4 class="mb-3">奖励发放</h4>
+    <!-- 奖励发放区剩余资金提示 -->
+    <div class="alert alert-info">剩余资金：<strong>￥<span id="funds-amount-value2">{{ '%.2f' % funds }}</span></strong></div>
+    <!-- 奖励发放表单 -->
+    <form method="post" action="/teacher/grant-reward" class="row g-3 mb-4" id="grantRewardForm">
+      <div class="col-md-2">
+        <input type="text" name="quarter" class="form-control" placeholder="季度(如Q1)" required>
+      </div>
+      <div class="col-md-2">
+        <input type="number" name="year" class="form-control" placeholder="年份" required>
+      </div>
+      <div class="col-md-2">
+        <input type="number" name="total_budget" class="form-control" placeholder="总预算" min="0" step="0.01" required>
+      </div>
+      <div class="col-md-2">
+        <input type="text" name="reward_name" class="form-control" placeholder="奖励名称" required>
+      </div>
+      <div class="col-md-2">
+        <select name="reward_type" class="form-select">
+          <option value="money">金钱</option>
+          <option value="material">实物</option>
+          <option value="certificate">证书</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <div class="col-md-1">
+        <input type="number" name="quantity" class="form-control" placeholder="数量" min="1" value="1" required>
+      </div>
+      <div class="col-md-1">
+        <button type="submit" class="btn btn-primary">发放</button>
+      </div>
+    </form>
+    <!-- 奖励发放历史记录表格 -->
+    <h5 class="mt-4">奖励发放历史记录</h5>
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>季度</th>
+            <th>年份</th>
+            <th>奖励名称</th>
+            <th>类型</th>
+            <th>数量</th>
+            <th>总预算</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rewards_history %}
+          <tr>
+            <td>{{ r.quarter }}</td>
+            <td>{{ r.year }}</td>
+            <td>{{ r.reward_name }}</td>
+            <td>{{ r.reward_type }}</td>
+            <td>{{ r.quantity }}</td>
+            <td>{{ r.total_budget }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if rewards_history|length == 0 %}
+        <div class="text-muted">暂无奖励发放记录</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 资金分配区块 -->
+  <div id="allocateSection" style="display:none;">
+    <h4 class="mb-3">资金分配</h4>
+    <!-- 资金分配表格 -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>活动名称</th>
+            <th>组织者</th>
+            <th>学院</th>
+            <th>分配金额</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in pending_allocations %}
+          <tr>
+            <td>{{ a.activity_name }}</td>
+            <td>{{ a.organizer }}</td>
+            <td>{{ a.college }}</td>
+            <td>
+              <!-- 资金分配表单，每行一个活动 -->
+              <form method="post" action="/teacher/allocate-funds" class="d-flex align-items-center mb-0 allocate-form">
+                <input type="hidden" name="activity_id" value="{{ a.activity_id }}">
+                <input type="number" name="allocated_funds" min="0" max="{{ a.max_allocatable }}" class="form-control me-2" style="width:100px;" required>
+                <input type="hidden" name="remaining_funds" value="">
+                <button type="submit" class="btn btn-sm btn-primary">分配并提交场地申请</button>
+              </form>
+            </td>
+            <td></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if pending_allocations|length == 0 %}
+        <div class="text-muted">暂无待分配资金的活动</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 历史记录区块 -->
+  <div id="historySection" style="display:none;">
+    <h4 class="mb-3">资金分配历史记录</h4>
+    <!-- 历史记录表格 -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>活动名称</th>
+            <th>组织者</th>
+            <th>学院</th>
+            <th>已分配金额</th>
+            <th>剩余金额</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in history %}
+          <tr>
+            <td>{{ h.activity_name }}</td>
+            <td>{{ h.organizer }}</td>
+            <td>{{ h.college }}</td>
+            <td>{{ h.allocated_funds }}</td>
+            <td>{{ h.remaining_funds }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if history|length == 0 %}
+        <div class="text-muted">暂无历史记录</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+// 资金管理页面JS切换区块，控制不同功能区显示
+const grantBtn = document.getElementById('grantBtn');
+const allocateBtn = document.getElementById('allocateBtn');
+const historyBtn = document.getElementById('historyBtn');
+const grantSection = document.getElementById('grantSection');
+const allocateSection = document.getElementById('allocateSection');
+const historySection = document.getElementById('historySection');
+
+// 切换到奖励发放区
+grantBtn.onclick = () => {
+  grantSection.style.display = '';
+  allocateSection.style.display = 'none';
+  historySection.style.display = 'none';
+  grantBtn.classList.add('btn-primary');
+  allocateBtn.classList.remove('btn-success');
+  historyBtn.classList.remove('btn-secondary');
+};
+// 切换到资金分配区
+allocateBtn.onclick = () => {
+  grantSection.style.display = 'none';
+  allocateSection.style.display = '';
+  historySection.style.display = 'none';
+  allocateBtn.classList.add('btn-success');
+  grantBtn.classList.remove('btn-primary');
+  historyBtn.classList.remove('btn-secondary');
+};
+// 切换到历史记录区
+historyBtn.onclick = () => {
+  grantSection.style.display = 'none';
+  allocateSection.style.display = 'none';
+  historySection.style.display = '';
+  historyBtn.classList.add('btn-secondary');
+  grantBtn.classList.remove('btn-primary');
+  allocateBtn.classList.remove('btn-success');
+};
+// 默认显示资金分配区
+allocateBtn.click();
+// 高亮当前页面导航项
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentNav = document.getElementById('nav-account');
+    if (currentNav) {
+      currentNav.classList.add('active');
+    }
+  });
+// 资金分配表单AJAX提交（每行活动分配）
+  document.querySelectorAll('.allocate-form').forEach(function(form) {
+    form.onsubmit = function(e) {
+      e.preventDefault();
+      // 写入当前剩余资金
+      form.querySelector('input[name="remaining_funds"]').value = document.getElementById('funds-amount-value').textContent;
+      const formData = new FormData(form);
+      fetch('/teacher/allocate-funds', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.success) {
+          location.reload();
+        } else {
+          alert(data.msg || '分配失败');
+        }
+      }); 
+    };
+  });
+// 动态更新剩余资金，基数为后端传入的funds
+  const initialFunds = parseFloat("{{ '%.2f' % funds }}");
+  function updateFundsAmount() {
+    let total = 0;
+    document.querySelectorAll('input[name="allocated_funds"]').forEach(function(input) {
+      const val = parseFloat(input.value);
+      if (!isNaN(val)) total += val;
+    });
+    const remain = (initialFunds - total).toFixed(2);
+    document.getElementById('funds-amount-value').textContent = remain;
+    const funds2 = document.getElementById('funds-amount-value2');
+    if (funds2) funds2.textContent = remain;
+  }
+  document.querySelectorAll('input[name="allocated_funds"]').forEach(function(input) {
+    input.addEventListener('input', updateFundsAmount);
+  });
+</script>
+
+<style>
+@media (max-width: 768px) {
+  .container {
+    margin-left: 0 !important;
+    padding-left: 15px !important;
+  }
+  .teacher-allnav {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+  }
+}
+</style>
+{% endblock %} 

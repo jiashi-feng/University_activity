@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% include 'teacher/bash.html' %}
+<!-- 数据统计页面主容器 -->
+<div class="container mt-4" style="margin-left: 240px;">
+  <!-- 页面标题和功能按钮区 -->
+  <h2 class="mb-4"><i class="bi bi-bar-chart"></i> 数据统计</h2>
+  <div class="mb-4">
+    <button id="currentQuarterBtn" class="btn btn-primary me-3">活动数量统计</button>
+    <button id="historyBtn" class="btn btn-secondary">活动完成记录</button>
+    <button id="rankingBtn" class="btn btn-success ms-3">学生积分排名</button>
+  </div>
+
+  <!-- 活动数量统计区块 -->
+  <div id="currentQuarterSection">
+    <h4 class="mb-3">活动数量统计</h4>
+    <div class="row">
+      <!-- 活动总数量卡片 -->
+      <div class="col-md-3 mb-3">
+        <div class="card text-center bg-primary text-white">
+          <div class="card-body">
+            <h3 class="card-title">{{ total_activities }}</h3>
+            <p class="card-text">活动总数量</p>
+          </div>
+        </div>
+      </div>
+      <!-- 已完成数量卡片 -->
+      <div class="col-md-3 mb-3">
+        <div class="card text-center bg-success text-white">
+          <div class="card-body">
+            <h3 class="card-title">{{ completed_activities_count }}</h3>
+            <p class="card-text">已完成数量</p>
+          </div>
+        </div>
+      </div>
+      <!-- 进行中数量卡片 -->
+      <div class="col-md-3 mb-3">
+        <div class="card text-center bg-warning text-white">
+          <div class="card-body">
+            <h3 class="card-title">{{ in_progress_activities_count }}</h3>
+            <p class="card-text">进行中数量</p>
+          </div>
+        </div>
+      </div>
+      <!-- 未开始数量卡片 -->
+      <div class="col-md-3 mb-3">
+        <div class="card text-center bg-info text-white">
+          <div class="card-body">
+            <h3 class="card-title">{{ not_started_activities_count }}</h3>
+            <p class="card-text">未开始数量</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史活动数量统计区块 -->
+  <div id="historySection" style="display:none;">
+    <h4 class="mb-3">已结束的活动记录</h4>
+    <div class="table-responsive">
+      <!-- 已结束活动表格 -->
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>活动名称</th>
+            <th>组织者</th>
+            <th>学院</th>
+            <th>开始时间</th>
+            <th>结束时间</th>
+            <th>参与人数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for activity in ended_activities %}
+          <tr>
+            <td>{{ activity.activity_name }}</td>
+            <td>{{ activity.organizer_name }}</td>
+            <td>{{ activity.college }}</td>
+            <td>{{ activity.start_time }}</td>
+            <td>{{ activity.end_time }}</td>
+            <td>{{ activity.participant_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      
+    </div>
+  </div>
+
+  <!-- 学生积分排名区块 -->
+  <div id="rankingSection" style="display:none;">
+    <h4 class="mb-3">学生积分排名</h4>
+    <div class="table-responsive">
+      <!-- 学生积分排名表格 -->
+      <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+          <tr>
+            <th>名次</th>
+            <th>ID</th>
+            <th>姓名</th>
+            <th>积分</th>
+            <th>活动完成率</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in ranking %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ student.student_id }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.score }}</td>
+            <td>{{ '%.2f%%' % (student.activity_completion_rate * 100) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if ranking|length == 0 %}
+        <div class="text-muted">暂无学生积分排名数据</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+// 数据统计页面JS切换区块，控制不同功能区显示
+const currentQuarterBtn = document.getElementById('currentQuarterBtn');
+const historyBtn = document.getElementById('historyBtn');
+const rankingBtn = document.getElementById('rankingBtn');
+const currentQuarterSection = document.getElementById('currentQuarterSection');
+const historySection = document.getElementById('historySection');
+const rankingSection = document.getElementById('rankingSection');
+
+// 切换到活动数量统计区
+currentQuarterBtn.onclick = () => {
+  currentQuarterSection.style.display = '';
+  historySection.style.display = 'none';
+  rankingSection.style.display = 'none';
+  currentQuarterBtn.classList.add('btn-primary');
+  currentQuarterBtn.classList.remove('btn-secondary');
+  historyBtn.classList.remove('btn-primary');
+  historyBtn.classList.add('btn-secondary');
+  rankingBtn.classList.remove('btn-success');
+  rankingBtn.classList.add('btn-secondary');
+};
+// 切换到历史活动区
+historyBtn.onclick = () => {
+  currentQuarterSection.style.display = 'none';
+  historySection.style.display = '';
+  rankingSection.style.display = 'none';
+  historyBtn.classList.add('btn-primary');
+  historyBtn.classList.remove('btn-secondary');
+  currentQuarterBtn.classList.remove('btn-primary');
+  currentQuarterBtn.classList.add('btn-secondary');
+  rankingBtn.classList.remove('btn-success');
+  rankingBtn.classList.add('btn-secondary');
+};
+// 切换到学生积分排名区
+rankingBtn.onclick = () => {
+  currentQuarterSection.style.display = 'none';
+  historySection.style.display = 'none';
+  rankingSection.style.display = '';
+  rankingBtn.classList.add('btn-success');
+  rankingBtn.classList.remove('btn-secondary');
+  currentQuarterBtn.classList.remove('btn-primary');
+  currentQuarterBtn.classList.add('btn-secondary');
+  historyBtn.classList.remove('btn-primary');
+  historyBtn.classList.add('btn-secondary');
+};
+// 高亮当前页面导航项
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentNav = document.getElementById('nav-stats');
+    if (currentNav) {
+      currentNav.classList.add('active');
+    }
+  });
+</script>
+
+<style>
+@media (max-width: 768px) {
+  .container {
+    margin-left: 0 !important;
+    padding-left: 15px !important;
+  }
+  .teacher-allnav {
+    width: 100%;
+    height: auto;
+    position: relative;
+    top: 0;
+  }
+}
+</style>
+{% endblock %} 
