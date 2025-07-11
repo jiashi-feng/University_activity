@@ -159,50 +159,34 @@
                     <div class="col-md-6">
                         <div class="form-section mb-4">
                             <h4 class="mb-4">进行活动</h4>
-                            <div class="mb-3">
-                                <label class="form-label">选择活动：</label>
-                                <input type="text" class="form-control" placeholder="请输入">
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label">填写进度表：</label>
-                                <div class="stepper mb-3 justify-content-between">
-                                    <div class="step">
-                                        <div class="circle"><i class="bi bi-circle"></i></div>
-                                        <div class="label step-label-active">第一节点</div>
-                                    </div>
-                                    <div class="step-line"></div>
-                                    <div class="step">
-                                        <div class="circle"><i class="bi bi-circle"></i></div>
-                                        <div class="label">第二节点</div>
-                                    </div>
-                                    <div class="step-line"></div>
-                                    <div class="step">
-                                        <div class="circle"><i class="bi bi-circle"></i></div>
-                                        <div class="label">第三节点</div>
-                                    </div>
-                                    <div class="step-line"></div>
-                                    <div class="step">
-                                        <div class="circle"><i class="bi bi-circle"></i></div>
-                                        <div class="label">第四节点</div>
-                                    </div>
+                            {% if msg %}
+                            <div class="alert alert-info">{{ msg }}</div>
+                            {% endif %}
+                            <form method="post">
+                                <div class="mb-3">
+                                    <label class="form-label">选择活动：</label>
+                                    <select class="form-select" name="activity_id" id="activity-select" required>
+                                        <option value="">请选择</option>
+                                        {% for act in doing_activities %}
+                                        <option value="{{ act.activity_id }}">{{ act.activity_name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">节点：</label>
-                                    <select class="form-select">
-                                        <option>第一时间节点</option>
-                                        <option>第二时间节点</option>
-                                        <option>第三时间节点</option>
-                                        <option>第四时间节点</option>
+                                    <label class="form-label">选择节点：</label>
+                                    <select class="form-select" name="node" id="node-select" required>
+                                        <option value="">请选择</option>
+                                        <!-- 节点选项将由JS根据剩余节点动态生成 -->
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">凭证与说明：</label>
-                                    <textarea class="form-control" rows="5" placeholder="请输入"></textarea>
+                                    <textarea class="form-control" name="content" rows="5" placeholder="请输入" required></textarea>
                                 </div>
                                 <div class="text-end">
-                                    <button class="btn btn-primary">完成</button>
+                                    <button class="btn btn-primary" type="submit">完成</button>
                                 </div>
-                            </div>
+                            </form>
                         </div>
                     </div>
                     <!-- 正在进行的活动表格 -->
@@ -216,31 +200,20 @@
                                             <th>序号</th>
                                             <th>活动名称</th>
                                             <th>报名时间</th>
-                                            <th>剩余时间</th>
+                                            <th>剩余节点数</th>
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        {% for act in doing_activities %}
                                         <tr>
-                                            <td>1</td><td>游泳比赛</td><td>2025.5.18</td><td>15天</td>
+                                            <td>{{ loop.index }}</td>
+                                            <td>{{ act.activity_name }}</td>
+                                            <td>{{ act.applied_at }}</td>
+                                            <td>{{ total_nodes - activity_progress[act.activity_id] }}</td>
                                         </tr>
-                                        <tr>
-                                            <td>2</td><td></td><td></td><td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>3</td><td></td><td></td><td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>4</td><td></td><td></td><td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>5</td><td></td><td></td><td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>6</td><td></td><td></td><td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>7</td><td></td><td></td><td></td>
-                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="4" class="text-center text-muted">暂无进行中活动</td></tr>
+                                        {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
@@ -250,5 +223,21 @@
             </main>
         </div>
     </div>
+<script>
+// 先定义数据变量，避免模板插值在属性上下文出错
+var activityProgress = JSON.parse('{{ activity_progress|tojson|safe }}');
+var totalNodes = Number('{{ total_nodes }}');
+// 动态根据活动选择生成剩余节点选项
+const activitySelect = document.getElementById('activity-select');
+const nodeSelect = document.getElementById('node-select');
+activitySelect && activitySelect.addEventListener('change', function() {
+    const actId = this.value;
+    nodeSelect.innerHTML = '<option value="">请选择</option>';
+    const completed = activityProgress[actId] || 0;
+    for (let i = completed + 1; i <= totalNodes; i++) {
+        nodeSelect.innerHTML += `<option value="${i}">第${i}时间节点</option>`;
+    }
+});
+</script>
 </body>
 </html> 

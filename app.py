@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort
 import sqlite3
 from datetime import datetime, timedelta
 import os
@@ -133,11 +133,10 @@ def logout():
 
 # ==================== 学生(参与者)路由 ====================
 
-@app.route('/student/dashboard')
+@app.route('/student/dashboard', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def student_dashboard():
-    """学生主页 - 显示可报名活动列表"""
     db = get_db()
     try:
         # 获取学生信息
@@ -147,49 +146,101 @@ def student_dashboard():
             JOIN users u ON s.student_id = u.user_id
             WHERE s.student_id = ?
         ''', (session['user_id'],)).fetchone()
-        
         # 获取学生特长
         student_skills = db.execute('''
             SELECT skill_name, skill_level 
             FROM student_skills 
             WHERE student_id = ?
         ''', (session['user_id'],)).fetchall()
-        
-        # 获取可报名的活动（状态为已批准且未过期）
-        available_activities = db.execute('''
+        # 获取筛选条件
+        activity_type = ''
+        status = ''
+        start_date = ''
+        if request.method == 'POST':
+            activity_type = request.form.get('activity_type', '').strip()
+            status = request.form.get('status', '').strip()
+            start_date = request.form.get('start_date', '').strip()
+        # 构建SQL
+        sql = '''
             SELECT a.*, u.name as organizer_name, t.name as supervisor_name
             FROM activities a
             JOIN users u ON a.organizer_id = u.user_id
             LEFT JOIN users t ON a.supervisor_id = t.user_id
             WHERE a.status = 'approved' 
-            AND a.start_time > datetime('now')
-            AND a.participant_count < a.max_participants
-            ORDER BY a.start_time
-        ''').fetchall()
-        
+              AND a.start_time > datetime('now')
+              AND a.participant_count < a.max_participants
+        '''
+        params = []
+        if activity_type:
+            sql += ' AND a.activity_type = ?'
+            params.append(activity_type)
+        if start_date:
+            sql += ' AND date(a.start_time) = ?'
+            params.append(start_date)
+        if status == '报名中':
+            sql += ' AND a.start_time > datetime("now")'
+        elif status == '即将开始':
+            sql += ' AND a.start_time > datetime("now") AND a.start_time <= datetime("now", "+3 days")'
+        elif status == '进行中':
+            sql += ' AND a.start_time <= datetime("now") AND a.end_time > datetime("now")'
+        sql += ' ORDER BY a.start_time'
+        available_activities = db.execute(sql, tuple(params)).fetchall()
         # 获取已报名的活动
         my_activities = db.execute('''
-            SELECT a.*, ap.status as participation_status, u.name as organizer_name
+            SELECT a.*, ap.status as participation_status, ap.activity_id as ap_activity_id, ap.status as ap_status, ap.approved_at, u.name as organizer_name
             FROM activities a
             JOIN activity_participants ap ON a.activity_id = ap.activity_id
             JOIN users u ON a.organizer_id = u.user_id
             WHERE ap.student_id = ?
             ORDER BY a.start_time DESC
         ''', (session['user_id'],)).fetchall()
-        
+        # 统计各类活动数量（结合节点数和审核状态）
+        count_applied = 0
+        count_in_progress = 0
+        count_pending = 0
+        count_completed = 0
+        for act in my_activities:
+            # 查询该活动的进度节点数
+            node_count = db.execute('''SELECT COUNT(*) FROM activity_progress WHERE activity_id=? AND participant_id=?''', (act['ap_activity_id'], session['user_id'])).fetchone()[0]
+            # 审核通过：ap.status in ('in_progress','completed') 或 ap.approved_at不为空
+            is_approved = act['ap_status'] in ('in_progress','completed') or (act['approved_at'] is not None)
+            if act['ap_status'] == 'completed':
+                count_completed += 1
+            elif act['ap_status'] == 'applied':
+                if not is_approved:
+                    if node_count == 0 or node_count == 4:
+                        count_applied += 1
+                    count_pending += 1
+                else:
+                    count_in_progress += 1
+            elif act['ap_status'] == 'in_progress' or (is_approved or node_count < 4):
+                count_in_progress += 1
         return render_template('student/dashboard.html', 
                              student_info=student_info,
                              student_skills=student_skills,
                              available_activities=available_activities,
-                             my_activities=my_activities)
-    
+                             my_activities=my_activities,
+                             filter_activity_type=activity_type,
+                             filter_status=status,
+                             filter_start_date=start_date,
+                             count_applied=count_applied,
+                             count_in_progress=count_in_progress,
+                             count_pending=count_pending,
+                             count_completed=count_completed)
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
         return render_template('student/dashboard.html', 
                              student_info=None,
                              student_skills=[],
                              available_activities=[],
-                             my_activities=[])
+                             my_activities=[],
+                             filter_activity_type='',
+                             filter_status='',
+                             filter_start_date='',
+                             count_applied=0,
+                             count_in_progress=0,
+                             count_pending=0,
+                             count_completed=0)
     finally:
         db.close()
 
@@ -311,26 +362,273 @@ def create_activity():
     
     return render_template('student/create_activity.html')
 
-@app.route('/student/add_activity')
+@app.route('/student/add_activity', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def add_activity():
-    """活动添加页面"""
-    return render_template('student/add_activity.html')
+    db = get_db()
+    if request.method == 'POST':
+        data = request.get_json()
+        activity_name = data.get('activity_name')
+        activity_time = data.get('activity_time')  # 允许只输入日期
+        activity_level = data.get('activity_level')
+        print('DEBUG: activity_name:', activity_name, '| activity_time:', activity_time, '| activity_level:', activity_level)
+        try:
+            # 支持只输入日期匹配
+            activity = db.execute('''
+                SELECT * FROM activities WHERE activity_name = ? AND date(start_time) = ? AND activity_type = ?
+            ''', (activity_name, activity_time, activity_level)).fetchone()
+            if not activity:
+                return jsonify({'success': False, 'msg': '无此项活动'}), 404
+            # 检查是否已报名
+            existing = db.execute('''
+                SELECT * FROM activity_participants WHERE activity_id = ? AND student_id = ?
+            ''', (activity['activity_id'], session['user_id'])).fetchone()
+            if existing:
+                return jsonify({'success': False, 'msg': '您已报名该活动'}), 400
+            # 添加报名
+            db.execute('''
+                INSERT INTO activity_participants (activity_id, student_id, status) VALUES (?, ?, 'applied')
+            ''', (activity['activity_id'], session['user_id']))
+            db.execute('''
+                UPDATE activities SET participant_count = participant_count + 1 WHERE activity_id = ?
+            ''', (activity['activity_id'],))
+            db.commit()
+            return jsonify({'success': True, 'msg': '添加成功'})
+        except Exception as e:
+            db.rollback()
+            return jsonify({'success': False, 'msg': f'添加失败: {str(e)}'}), 500
+        finally:
+            db.close()
+    else:
+        try:
+            # 获取当前学生特长
+            student_skills = db.execute('''
+                SELECT skill_name FROM student_skills WHERE student_id = ?
+            ''', (session['user_id'],)).fetchall()
+            skill_names = [row['skill_name'] for row in student_skills]
+            # 推荐活动：所需特长与学生特长有交集，且未报名，且未开始
+            if skill_names:
+                recommend_activities = db.execute(f'''
+                    SELECT a.*, u.name as organizer_name
+                    FROM activities a
+                    JOIN users u ON a.organizer_id = u.user_id
+                    WHERE a.status = 'approved'
+                      AND a.start_time > datetime('now')
+                      AND (
+                        {' OR '.join(['a.required_skills LIKE ?' for _ in skill_names])}
+                      )
+                      AND a.activity_id NOT IN (
+                        SELECT activity_id FROM activity_participants WHERE student_id = ?
+                      )
+                    ORDER BY a.start_time
+                ''', tuple([f'%{s}%' for s in skill_names] + [session['user_id']])).fetchall()
+            else:
+                recommend_activities = []
+            return render_template('student/add_activity.html', recommend_activities=recommend_activities)
+        except Exception as e:
+            return render_template('student/add_activity.html', recommend_activities=[])
+        finally:
+            db.close()
 
-@app.route('/student/doing_activity')
+@app.route('/student/query_activities', methods=['POST'])
+@login_required
+@role_required('student')
+def query_activities():
+    """多条件查询活动"""
+    data = request.get_json()
+    name = data.get('activity_name', '').strip()
+    time = data.get('activity_time', '').strip()
+    level = data.get('activity_level', '').strip()
+    db = get_db()
+    try:
+        sql = '''SELECT a.*, u.name as organizer_name FROM activities a JOIN users u ON a.organizer_id = u.user_id WHERE a.status = 'approved' '''
+        params = []
+        if name:
+            sql += ' AND a.activity_name LIKE ?'
+            params.append(f'%{name}%')
+        if time:
+            sql += ' AND a.start_time = ?'
+            params.append(time)
+        if level:
+            sql += ' AND a.activity_type = ?'
+            params.append(level)
+        sql += ' ORDER BY a.start_time'
+        activities = db.execute(sql, tuple(params)).fetchall()
+        # 组装返回数据
+        result = []
+        for a in activities:
+            result.append({
+                'activity_name': a['activity_name'],
+                'start_time': a['start_time'],
+                'required_skills': a['required_skills'],
+                'balance': f"{a['participant_count']}/{a['max_participants']}",
+                'status': a['status']
+            })
+        return jsonify({'success': True, 'activities': result})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': f'查询失败: {str(e)}'}), 500
+    finally:
+        db.close()
+
+@app.route('/student/recommend_activities', methods=['GET'])
+@login_required
+@role_required('student')
+def recommend_activities():
+    """返回推荐活动列表"""
+    db = get_db()
+    try:
+        student_skills = db.execute('''SELECT skill_name FROM student_skills WHERE student_id = ?''', (session['user_id'],)).fetchall()
+        skill_names = [row['skill_name'] for row in student_skills]
+        if skill_names:
+            placeholders = ','.join(['?'] * len(skill_names))
+            recommend_activities = db.execute(f'''
+                SELECT a.*, u.name as organizer_name
+                FROM activities a
+                JOIN users u ON a.organizer_id = u.user_id
+                WHERE a.status = 'approved'
+                  AND a.start_time > datetime('now')
+                  AND (
+                    {' OR '.join(['a.required_skills LIKE ?' for _ in skill_names])}
+                  )
+                  AND a.activity_id NOT IN (
+                    SELECT activity_id FROM activity_participants WHERE student_id = ?
+                  )
+                ORDER BY a.start_time
+            ''', tuple([f'%{s}%' for s in skill_names] + [session['user_id']])).fetchall()
+        else:
+            recommend_activities = []
+        result = []
+        for a in recommend_activities:
+            result.append({
+                'activity_name': a['activity_name'],
+                'start_time': a['start_time'],
+                'required_skills': a['required_skills'],
+                'balance': f"{a['participant_count']}/{a['max_participants']}",
+                'status': a['status']
+            })
+        return jsonify({'success': True, 'activities': result})
+    except Exception as e:
+        return jsonify({'success': False, 'msg': f'推荐失败: {str(e)}'}), 500
+    finally:
+        db.close()
+
+@app.route('/student/doing_activity', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def doing_activity():
-    """进行活动页面"""
-    return render_template('student/doing_activity.html')
+    db = get_db()
+    msg = ''
+    try:
+        user_id = session['user_id']
+        # 处理进度填写
+        if request.method == 'POST':
+            activity_id = int(request.form.get('activity_id'))
+            node = int(request.form.get('node'))
+            content = request.form.get('content', '').strip()
+            # 检查是否已填写该节点
+            existing = db.execute('''SELECT * FROM activity_progress WHERE activity_id=? AND participant_id=? AND progress_content=?''', (activity_id, user_id, f'节点{node}')).fetchone()
+            if existing:
+                msg = '该节点已填写过！'
+            else:
+                db.execute('''INSERT INTO activity_progress (activity_id, participant_id, progress_content, completion_percentage, submitted_at) VALUES (?, ?, ?, ?, datetime('now'))''', (activity_id, user_id, f'节点{node}', node*25))
+                db.commit()
+                msg = '进度已保存！'
+        # 查询进行中活动（已报名且未完成）
+        doing_activities = db.execute('''
+            SELECT a.activity_id, a.activity_name, ap.applied_at, a.total_score
+            FROM activities a
+            JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            WHERE ap.student_id = ? AND ap.status IN ('applied','in_progress') AND a.status = 'approved'
+        ''', (user_id,)).fetchall()
+        # 查询每个活动的已完成节点数
+        activity_progress = {}
+        for act in doing_activities:
+            count = db.execute('''SELECT COUNT(*) FROM activity_progress WHERE activity_id=? AND participant_id=?''', (act['activity_id'], user_id)).fetchone()[0]
+            activity_progress[act['activity_id']] = count
+        # 总节点数（假设4）
+        total_nodes = 4
+        return render_template('student/doing_activity.html',
+                              doing_activities=doing_activities,
+                              activity_progress=activity_progress,
+                              total_nodes=total_nodes,
+                              msg=msg)
+    except Exception as e:
+        return render_template('student/doing_activity.html',
+                              doing_activities=[],
+                              activity_progress={},
+                              total_nodes=4,
+                              msg=f'发生错误: {str(e)}')
+    finally:
+        db.close()
 
-@app.route('/student/finished_activity')
+@app.route('/student/finished_activity', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def finished_activity():
-    """已结束活动页面"""
-    return render_template('student/finished_activity.html')
+    db = get_db()
+    msg = ''
+    eval_success = False
+    progress_nodes = []
+    selected_activity_id = None
+    try:
+        user_id = session['user_id']
+        # 查询所有已完成活动
+        finished_activities = db.execute('''
+            SELECT a.activity_id, a.activity_name, ap.applied_at,
+                   (SELECT COUNT(*) FROM activity_evaluations e WHERE e.activity_id=a.activity_id AND e.participant_id=ap.student_id) as evaluated
+            FROM activities a
+            JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            WHERE ap.student_id = ? AND ap.status = 'completed' AND a.status = 'approved'
+        ''', (user_id,)).fetchall()
+        # 评价提交
+        if request.method == 'POST':
+            activity_id_str = request.form.get('activity_id', '').strip()
+            rating_str = request.form.get('rating', '').strip()
+            if not activity_id_str or not rating_str:
+                msg = '请选择活动并填写评分！'
+            else:
+                selected_activity_id = int(activity_id_str)
+                rating = int(rating_str)
+                record = request.form.get('record', '').strip()
+                comment = request.form.get('comment', '').strip()
+                # 校验活动是否属于该用户已完成活动
+                valid = any(a['activity_id'] == selected_activity_id for a in finished_activities)
+                if not valid:
+                    msg = '活动尚未完成'
+                else:
+                    # 检查是否已评价
+                    already = db.execute('''SELECT * FROM activity_evaluations WHERE activity_id=? AND participant_id=?''', (selected_activity_id, user_id)).fetchone()
+                    if already:
+                        msg = '您已评价过该活动'
+                    else:
+                        db.execute('''INSERT INTO activity_evaluations (activity_id, participant_id, rating, comment) VALUES (?, ?, ?, ?)''', (selected_activity_id, user_id, rating, comment))
+                        db.commit()
+                        msg = '评价成功'
+                        eval_success = True
+                # 查询该活动4个节点的进度内容
+                progress_nodes = db.execute('''SELECT progress_content FROM activity_progress WHERE activity_id=? AND participant_id=? ORDER BY progress_id''', (selected_activity_id, user_id)).fetchall()
+        else:
+            # GET请求，支持activity_id参数
+            activity_id_str = request.args.get('activity_id', '').strip()
+            if activity_id_str:
+                selected_activity_id = int(activity_id_str)
+                progress_nodes = db.execute('''SELECT progress_content FROM activity_progress WHERE activity_id=? AND participant_id=? ORDER BY progress_id''', (selected_activity_id, user_id)).fetchall()
+        return render_template('student/finished_activity.html',
+                              finished_activities=finished_activities,
+                              msg=msg,
+                              eval_success=eval_success,
+                              progress_nodes=progress_nodes,
+                              selected_activity_id=selected_activity_id)
+    except Exception as e:
+        return render_template('student/finished_activity.html',
+                              finished_activities=[],
+                              msg=f'发生错误: {str(e)}',
+                              eval_success=False,
+                              progress_nodes=[],
+                              selected_activity_id=None)
+    finally:
+        db.close()
 
 @app.route('/student/profile_view')
 @login_required
@@ -357,11 +655,53 @@ def schedule():
 @login_required
 @role_required('student')
 def student_leave():
-    if request.method == 'POST':
-        # 这里可以处理表单数据保存逻辑
-        flash('请假申请已提交！', 'success')
-        return redirect(url_for('student_leave'))
-    return render_template('student/leave.html')
+    db = get_db()
+    msg = ''
+    try:
+        user_id = session['user_id']
+        # 查询进行中或未结束的活动及其指导老师
+        activities = db.execute('''
+            SELECT a.activity_id, a.activity_name, u.name as supervisor_name, a.supervisor_id
+            FROM activities a
+            JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            LEFT JOIN users u ON a.supervisor_id = u.user_id
+            WHERE ap.student_id = ? AND ap.status IN ('applied','in_progress') AND a.status = 'approved'
+        ''', (user_id,)).fetchall()
+        # 统计各类活动数量
+        count_applied = db.execute('''SELECT COUNT(*) FROM activity_participants WHERE student_id=? AND status='applied' ''', (user_id,)).fetchone()[0]
+        count_in_progress = db.execute('''SELECT COUNT(*) FROM activity_participants WHERE student_id=? AND status='in_progress' ''', (user_id,)).fetchone()[0]
+        count_pending = db.execute('''SELECT COUNT(*) FROM activity_participants WHERE student_id=? AND status='pending_review' ''', (user_id,)).fetchone()[0]
+        count_completed = db.execute('''SELECT COUNT(*) FROM activity_participants WHERE student_id=? AND status='completed' ''', (user_id,)).fetchone()[0]
+        if request.method == 'POST':
+            activity_id = request.form.get('activity_id')
+            reason = request.form.get('reason','').strip()
+            teacher_id = request.form.get('teacher_id')
+            leave_time = request.form.get('leave_time')
+            # 简单校验
+            if not activity_id or not reason or not teacher_id or not leave_time:
+                msg = '请填写完整信息！'
+            else:
+                # 保存请假信息到 student_leave 表（如无则创建）
+                db.execute('''CREATE TABLE IF NOT EXISTS student_leave (
+                    leave_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER,
+                    activity_id INTEGER,
+                    teacher_id INTEGER,
+                    reason TEXT,
+                    leave_time TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )''')
+                db.execute('''INSERT INTO student_leave (student_id, activity_id, teacher_id, reason, leave_time) VALUES (?, ?, ?, ?, ?)''',
+                    (user_id, activity_id, teacher_id, reason, leave_time))
+                db.commit()
+                msg = '请假申请已提交！'
+        return render_template('student/leave.html', activities=activities, msg=msg,
+            count_applied=count_applied, count_in_progress=count_in_progress, count_pending=count_pending, count_completed=count_completed)
+    except Exception as e:
+        return render_template('student/leave.html', activities=[], msg=f'发生错误: {str(e)}',
+            count_applied=0, count_in_progress=0, count_pending=0, count_completed=0)
+    finally:
+        db.close()
 
 @app.route('/student/message')
 @login_required
@@ -544,9 +884,8 @@ def api_activities():
 # ==================== 错误处理 ====================
 
 @app.errorhandler(404)
-def not_found(error):
-    """404错误处理"""
-    return render_template('errors/404.html'), 404
+def page_not_found(e):
+    return '404 Not Found', 404
 
 @app.errorhandler(500)
 def internal_error(error):

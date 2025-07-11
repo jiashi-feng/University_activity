@@ -132,15 +132,16 @@
                                         </tr>
                                     </thead>
                                     <tbody>
+                                        {% for act in finished_activities %}
                                         <tr>
-                                            <td>1</td><td>游泳比赛</td><td>2025.5.18</td><td>待评价</td>
+                                            <td>{{ loop.index }}</td>
+                                            <td>{{ act.activity_name }}</td>
+                                            <td>{{ act.applied_at }}</td>
+                                            <td>{% if act.evaluated %}已评价{% else %}待评价{% endif %}</td>
                                         </tr>
-                                        <tr><td>2</td><td></td><td></td><td></td></tr>
-                                        <tr><td>3</td><td></td><td></td><td></td></tr>
-                                        <tr><td>4</td><td></td><td></td><td></td></tr>
-                                        <tr><td>5</td><td></td><td></td><td></td></tr>
-                                        <tr><td>6</td><td></td><td></td><td></td></tr>
-                                        <tr><td>7</td><td></td><td></td><td></td></tr>
+                                        {% else %}
+                                        <tr><td colspan="4" class="text-center text-muted">暂无已结束活动</td></tr>
+                                        {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
@@ -150,32 +151,64 @@
                     <div class="col-md-6">
                         <div class="form-section">
                             <h5 class="mb-4">填写评价表：</h5>
+                            {% if msg %}
+                            <div class="alert alert-info">{{ msg }}</div>
+                            {% endif %}
+                            {% if msg == '您已评价过该活动' %}
+                            <script>alert('该活动已被评价');</script>
+                            {% endif %}
                             <div class="mb-3">
                                 <label class="form-label">选择活动：</label>
-                                <input type="text" class="form-control" placeholder="请输入">
+                                <form method="get" id="activity-select-form">
+                                    <select class="form-select" name="activity_id" id="activity-select" required {% if not finished_activities|selectattr('evaluated', 'equalto', 0)|list %}disabled{% endif %} onchange="this.form.submit()">
+                                        <option value="">请选择</option>
+                                        {% for act in finished_activities if not act.evaluated %}
+                                        <option value="{{ act.activity_id }}" {% if act.activity_id==selected_activity_id %}selected{% endif %}>{{ act.activity_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                                {% if not finished_activities|selectattr('evaluated', 'equalto', 0)|list %}
+                                <div class="text-muted mt-2">暂无可评价的已完成活动</div>
+                                {% endif %}
                             </div>
-                            <div class="form-section mt-3">
-                                <div class="mb-3">
-                                    <label class="form-label">活动评分：</label>
-                                    <input type="text" class="form-control" placeholder="请输入">
-                                </div>
+                            {% if selected_activity_id %}
+                            <form method="post">
+                                <input type="hidden" name="activity_id" value="{{ selected_activity_id }}">
                                 <div class="mb-3">
                                     <label class="form-label">活动记录：</label>
-                                    <textarea class="form-control" rows="3" placeholder="请输入"></textarea>
+                                    <div class="border rounded p-2 bg-light" style="min-height:80px;">
+                                        {% if progress_nodes %}
+                                            {% for node in progress_nodes %}
+                                            <div>节点{{ loop.index }}: {{ node.progress_content }}</div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span class="text-muted">无进度内容</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">活动评分：</label>
+                                    <input type="number" class="form-control" name="rating" min="1" max="5" placeholder="1-5分" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">活动评价：</label>
-                                    <textarea class="form-control" rows="3" placeholder="请输入"></textarea>
+                                    <textarea class="form-control" name="comment" rows="3" placeholder="请输入" required></textarea>
                                 </div>
                                 <div class="text-center mt-4">
-                                    <button class="btn btn-primary">确认</button>
+                                    <button class="btn btn-primary" type="submit">确认</button>
                                 </div>
-                            </div>
+                            </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
+    <script>
+    document.getElementById('activity-select')?.addEventListener('change', function() {
+        this.form.submit();
+    });
+    </script>
 </body>
 </html> 

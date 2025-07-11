@@ -115,28 +115,25 @@
                 <!-- 筛选区域 -->
                 <div class="filter-section">
                     <h5 class="mb-3"><i class="fas fa-filter me-2"></i>筛选条件</h5>
-                    <form method="POST" action="/student/filter">
+                    <form method="POST" action="/student/dashboard">
                         <div class="row">
                             <div class="col-md-3">
                                 <select class="form-select" name="activity_type">
-                                    <option value="">所有类型</option>
-                                    <option value="学术">学术类</option>
-                                    <option value="文艺">文艺类</option>
-                                    <option value="体育">体育类</option>
-                                    <option value="社会实践">社会实践</option>
-                                    <option value="志愿服务">志愿服务</option>
+                                    <option value="" {% if not filter_activity_type %}selected{% endif %}>所有类型</option>
+                                    <option value="indoor" {% if filter_activity_type=='indoor' %}selected{% endif %}>indoor（室内）</option>
+                                    <option value="outdoor" {% if filter_activity_type=='outdoor' %}selected{% endif %}>outdoor（室外）</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <select class="form-select" name="status">
-                                    <option value="">所有状态</option>
-                                    <option value="报名中">报名中</option>
-                                    <option value="即将开始">即将开始</option>
-                                    <option value="进行中">进行中</option>
+                                    <option value="" {% if not filter_status %}selected{% endif %}>所有状态</option>
+                                    <option value="报名中" {% if filter_status=='报名中' %}selected{% endif %}>报名中</option>
+                                    <option value="即将开始" {% if filter_status=='即将开始' %}selected{% endif %}>即将开始</option>
+                                    <option value="进行中" {% if filter_status=='进行中' %}selected{% endif %}>进行中</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <input type="date" class="form-control" name="start_date" placeholder="开始日期">
+                                <input type="date" class="form-control" name="start_date" placeholder="开始日期" value="{{ filter_start_date }}">
                             </div>
                             <div class="col-md-3">
                                 <button type="submit" class="btn btn-primary w-100">
@@ -153,25 +150,25 @@
                     <div class="row">
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-primary">3</div>
+                                <div class="h4 text-primary">{{ count_applied }}</div>
                                 <small class="text-muted">已报名</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-success">1</div>
+                                <div class="h4 text-success">{{ count_in_progress }}</div>
                                 <small class="text-muted">进行中</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-warning">2</div>
+                                <div class="h4 text-warning">{{ count_pending }}</div>
                                 <small class="text-muted">待审核</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <div class="h4 text-info">5</div>
+                                <div class="h4 text-info">{{ count_completed }}</div>
                                 <small class="text-muted">已完成</small>
                             </div>
                         </div>
@@ -186,167 +183,36 @@
                 </div>
 
                 <div class="row">
-                    <!-- 活动卡片 1 -->
+                    {% for activity in available_activities %}
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card activity-card h-100">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">学术</span>
+                                    <span class="activity-type">{{ activity.activity_type or '未知' }}</span>
                                     <span class="badge bg-success status-badge">报名中</span>
                                 </div>
-                                <h5 class="card-title">Python编程竞赛</h5>
+                                <h5 class="card-title">{{ activity.activity_name }}</h5>
                                 <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>2024-03-15 至 2024-03-20<br>
-                                    <i class="fas fa-map-marker-alt me-1"></i>计算机学院机房<br>
-                                    <i class="fas fa-users me-1"></i>已报名: 15/30人
+                                    <i class="fas fa-calendar me-1"></i>{{ activity.start_time }} 至 {{ activity.end_time }}<br>
+                                    <i class="fas fa-users me-1"></i>已报名: {{ activity.participant_count }}/{{ activity.max_participants }}人
                                 </p>
-                                <p class="card-text">提升编程技能，与同学切磋技艺，获得证书和奖励。</p>
+                                <p class="card-text">{{ activity.description }}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: 20
+                                        <i class="fas fa-star text-warning me-1"></i>积分: {{ activity.total_score or 0 }}
                                     </small>
-                                    <button class="btn btn-primary btn-sm" onclick="joinActivity(1)">
-                                        <i class="fas fa-plus me-1"></i>报名
+                                    <form method="post" action="{{ url_for('apply_activity', activity_id=activity.activity_id) }}" style="margin:0;">
+                                        <button type="submit" class="btn btn-primary btn-sm" {% if activity.participant_count >= activity.max_participants %}disabled{% endif %}>
+                                            <i class="fas fa-plus me-1"></i>{% if activity.participant_count >= activity.max_participants %}已满员{% else %}报名{% endif %}
                                     </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- 活动卡片 2 -->
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card activity-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">文艺</span>
-                                    <span class="badge bg-warning status-badge">即将开始</span>
-                                </div>
-                                <h5 class="card-title">春季音乐会</h5>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>2024-03-22 19:00<br>
-                                    <i class="fas fa-map-marker-alt me-1"></i>学校大礼堂<br>
-                                    <i class="fas fa-users me-1"></i>已报名: 8/15人
-                                </p>
-                                <p class="card-text">展示音乐才华，丰富校园文化生活。</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: 15
-                                    </small>
-                                    <button class="btn btn-primary btn-sm" onclick="joinActivity(2)">
-                                        <i class="fas fa-plus me-1"></i>报名
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 活动卡片 3 -->
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card activity-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">志愿服务</span>
-                                    <span class="badge bg-success status-badge">报名中</span>
-                                </div>
-                                <h5 class="card-title">社区义工活动</h5>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>2024-03-25 周末<br>
-                                    <i class="fas fa-map-marker-alt me-1"></i>附近社区<br>
-                                    <i class="fas fa-users me-1"></i>已报名: 12/20人
-                                </p>
-                                <p class="card-text">服务社区，奉献爱心，培养社会责任感。</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: 25
-                                    </small>
-                                    <button class="btn btn-primary btn-sm" onclick="joinActivity(3)">
-                                        <i class="fas fa-plus me-1"></i>报名
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 活动卡片 4 -->
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card activity-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">体育</span>
-                                    <span class="badge bg-info status-badge">进行中</span>
-                                </div>
-                                <h5 class="card-title">篮球友谊赛</h5>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>2024-03-10 至 2024-03-30<br>
-                                    <i class="fas fa-map-marker-alt me-1"></i>体育馆<br>
-                                    <i class="fas fa-users me-1"></i>已报名: 20/20人
-                                </p>
-                                <p class="card-text">强身健体，团队合作，享受运动乐趣。</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: 18
-                                    </small>
-                                    <button class="btn btn-secondary btn-sm" disabled>
-                                        <i class="fas fa-times me-1"></i>已满员
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 活动卡片 5 -->
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card activity-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">社会实践</span>
-                                    <span class="badge bg-success status-badge">报名中</span>
-                                </div>
-                                <h5 class="card-title">企业参观实习</h5>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>2024-04-01 至 2024-04-05<br>
-                                    <i class="fas fa-map-marker-alt me-1"></i>合作企业<br>
-                                    <i class="fas fa-users me-1"></i>已报名: 5/12人
-                                </p>
-                                <p class="card-text">了解行业发展，增长实践经验。</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: 30
-                                    </small>
-                                    <button class="btn btn-primary btn-sm" onclick="joinActivity(5)">
-                                        <i class="fas fa-plus me-1"></i>报名
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 活动卡片 6 -->
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card activity-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">学术</span>
-                                    <span class="badge bg-success status-badge">报名中</span>
-                                </div>
-                                <h5 class="card-title">学术论文写作讲座</h5>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>2024-03-28 14:00<br>
-                                    <i class="fas fa-map-marker-alt me-1"></i>图书馆报告厅<br>
-                                    <i class="fas fa-users me-1"></i>已报名: 25/50人
-                                </p>
-                                <p class="card-text">提升学术写作能力，掌握论文写作技巧。</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: 12
-                                    </small>
-                                    <button class="btn btn-primary btn-sm" onclick="joinActivity(6)">
-                                        <i class="fas fa-plus me-1"></i>报名
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% else %}
+                    <div class="col-12 text-center text-muted">暂无可报名活动</div>
+                    {% endfor %}
                 </div>
 
                 <!-- 分页 -->
@@ -373,66 +239,8 @@
         </div>
     </div>
 
-    <!-- 报名确认模态框 -->
-    <div class="modal fade" id="joinModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">确认报名</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>您确定要报名参加此活动吗？</p>
-                    <form id="joinForm" method="POST" action="/student/join">
-                        <input type="hidden" name="activity_id" id="activityId">
-                        <div class="mb-3">
-                            <label for="reason" class="form-label">报名理由（可选）</label>
-                            <textarea class="form-control" name="reason" id="reason" rows="3" placeholder="请简述您的报名理由或期望..."></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" form="joinForm" class="btn btn-primary">确认报名</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 报名确认模态框及JS可移除，因已用表单直连后端 -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function joinActivity(activityId) {
-            document.getElementById('activityId').value = activityId;
-            var modal = new bootstrap.Modal(document.getElementById('joinModal'));
-            modal.show();
-        }
-
-        // 处理表单提交
-        document.getElementById('joinForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // 这里可以添加AJAX请求
-            fetch('/student/join', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams(new FormData(this))
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('报名成功！');
-                    location.reload();
-                } else {
-                    alert('报名失败：' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('报名失败，请稍后重试。');
-            });
-        });
-    </script>
 </body>
 </html>

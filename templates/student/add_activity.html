@@ -124,15 +124,18 @@
                                     </div>
                                 </div>
                                 <div class="mb-4 row align-items-center">
-                                    <label class="col-sm-3 col-form-label form-label">活动时间：</label>
+                                    <label class="col-sm-3 col-form-label form-label">活动开始时间：</label>
                                     <div class="col-sm-9">
-                                        <input type="text" class="form-control" placeholder="请输入" name="activity_time">
+                                        <input type="date" class="form-control" placeholder="请输入" name="activity_time">
                                     </div>
                                 </div>
                                 <div class="mb-4 row align-items-center">
-                                    <label class="col-sm-3 col-form-label form-label">活动级别：</label>
+                                    <label class="col-sm-3 col-form-label form-label">活动类型：</label>
                                     <div class="col-sm-9">
-                                        <input type="text" class="form-control" placeholder="请输入" name="activity_level">
+                                        <select class="form-control" name="activity_level">
+                                            <option value="indoor">indoor（室内）</option>
+                                            <option value="outdoor">outdoor（室外）</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="text-center mt-4">
@@ -148,8 +151,8 @@
                                     <thead>
                                         <tr>
                                             <th>活动名称</th>
-                                            <th>活动时间</th>
-                                            <th>所属特长</th>
+                                            <th>活动开始时间</th>
+                                            <th>所需特长</th>
                                             <th>活动余额</th>
                                             <th>活动状态</th>
                                         </tr>
@@ -173,22 +176,26 @@
                     <div class="col-md-6">
                         <div class="form-section mb-4">
                             <h4 class="mb-3">活动查询</h4>
-                            <form class="row g-3 align-items-center">
+                            <form class="row g-3 align-items-center" id="activity-query-form">
                                 <div class="col-12 mb-2">
                                     <label class="form-label">活动名称</label>
-                                    <input type="text" class="form-control" placeholder="请输入">
+                                    <input type="text" class="form-control" name="activity_name" placeholder="请输入">
                                 </div>
                                 <div class="col-12 mb-2">
                                     <label class="form-label">活动类型</label>
-                                    <input type="text" class="form-control" placeholder="请选择活动类型" disabled>
+                                    <select class="form-control" name="activity_level">
+                                        <option value="">不限</option>
+                                        <option value="indoor">indoor（室内）</option>
+                                        <option value="outdoor">outdoor（室外）</option>
+                                    </select>
                                 </div>
                                 <div class="col-12 mb-2">
-                                    <label class="form-label">活动时间</label>
-                                    <input type="text" class="form-control" placeholder="请选择活动类型" disabled>
+                                    <label class="form-label">活动开始时间</label>
+                                    <input type="date" class="form-control" name="activity_time" placeholder="请选择活动开始时间">
                                 </div>
                                 <div class="col-12 d-flex justify-content-start mt-2">
-                                    <button type="button" class="btn btn-primary me-2">查询</button>
-                                    <button type="button" class="btn btn-secondary">重置</button>
+                                    <button type="submit" class="btn btn-primary me-2">查询</button>
+                                    <button type="button" class="btn btn-secondary" id="reset-query">重置</button>
                                 </div>
                             </form>
                         </div>
@@ -198,36 +205,17 @@
                                 <table class="table table-bordered mb-0">
                                     <thead>
                                         <tr>
-                                            <th><input type="checkbox" checked></th>
                                             <th>活动名称</th>
-                                            <th>活动时间</th>
-                                            <th>所属特长</th>
+                                            <th>活动开始时间</th>
+                                            <th>所需特长</th>
                                             <th>活动余额</th>
                                             <th>活动状态</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><input type="checkbox" checked></td>
-                                            <td>辩论赛</td><td>6.7~6.15</td><td>辩论</td><td>18/25</td><td>待开始</td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="checkbox" checked></td>
-                                            <td>人工智能讲座</td><td>7.3</td><td>无</td><td>65/100</td><td>待开始</td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="checkbox" checked></td>
-                                            <td>体质大赛</td><td>6.10~6.20</td><td>体育</td><td>25/100</td><td>待开始</td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="checkbox" checked></td>
-                                            <td>校园诗词</td><td>5.30~6.5</td><td>无</td><td>35/100</td><td>进行中</td>
-                                        </tr>
+                                    <tbody id="activity-list-tbody">
+                                        <!-- 查询结果将插入这里 -->
                                     </tbody>
                                 </table>
-                            </div>
-                            <div class="d-flex justify-content-end mt-2">
-                                <button class="btn btn-secondary">批量操作</button>
                             </div>
                         </div>
                     </div>
@@ -236,4 +224,90 @@
         </div>
     </div>
 </body>
-</html> 
+</html>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// 活动添加表单提交
+const addForm = document.querySelector('.form-section form');
+if (addForm) {
+    addForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const activity_name = addForm.querySelector('[name="activity_name"]').value.trim();
+        const activity_time = addForm.querySelector('[name="activity_time"]').value.trim();
+        const activity_level = addForm.querySelector('[name="activity_level"]').value.trim();
+        axios.post('/student/add_activity', {
+            activity_name, activity_time, activity_level
+        }).then(res => {
+            alert(res.data.msg);
+            if (res.data.success) {
+                addForm.reset();
+            }
+        }).catch(err => {
+            if (err.response && err.response.data && err.response.data.msg) {
+                alert(err.response.data.msg);
+            } else {
+                alert('添加失败');
+            }
+        });
+    });
+}
+
+// 活动查询表单提交
+const queryForm = document.getElementById('activity-query-form');
+if (queryForm) {
+    queryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const activity_name = queryForm.querySelector('[name="activity_name"]').value.trim();
+        const activity_time = queryForm.querySelector('[name="activity_time"]').value.trim();
+        const activity_level = queryForm.querySelector('[name="activity_level"]').value.trim();
+        axios.post('/student/query_activities', {
+            activity_name, activity_time, activity_level
+        }).then(res => {
+            if (res.data.success) {
+                renderActivityList(res.data.activities);
+            } else {
+                alert(res.data.msg);
+            }
+        }).catch(err => {
+            alert('查询失败');
+        });
+    });
+    // 重置按钮
+    document.getElementById('reset-query').onclick = function() {
+        queryForm.reset();
+        document.getElementById('activity-list-tbody').innerHTML = '';
+    };
+}
+// 动态渲染活动列表
+function renderActivityList(activities) {
+    const tbody = document.getElementById('activity-list-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!activities || activities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">无符合条件的活动</td></tr>';
+        return;
+    }
+    activities.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${a.activity_name}</td><td>${a.start_time}</td><td>${a.required_skills||''}</td><td>${a.balance}</td><td>${a.status}</td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// 推荐活动AJAX渲染
+function loadRecommendActivities() {
+    axios.get('/student/recommend_activities').then(res => {
+        if (res.data.success) {
+            const tbody = document.querySelector('.table-recommend tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            res.data.activities.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${a.activity_name}</td><td>${a.start_time}</td><td>${a.required_skills||''}</td><td>${a.balance}</td><td>${a.status}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+window.addEventListener('DOMContentLoaded', loadRecommendActivities);
+</script> 

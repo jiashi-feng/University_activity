@@ -67,11 +67,25 @@
                 <div class="row mb-4">
                     <div class="col-12">
                         <h2 class="fw-bold mb-4 mt-5">活动请假</h2>
+                        <div class="mb-4 d-flex gap-4">
+                            <span class="badge bg-primary">已报名：{{ count_applied }}</span>
+                            <span class="badge bg-success">进行中：{{ count_in_progress }}</span>
+                            <span class="badge bg-warning text-dark">待审核：{{ count_pending }}</span>
+                            <span class="badge bg-info text-dark">已完成：{{ count_completed }}</span>
+                        </div>
                         <form method="post" enctype="multipart/form-data" class="mb-5">
+                            {% if msg %}
+                            <div class="alert alert-info">{{ msg }}</div>
+                            {% endif %}
                             <div class="mb-4 row align-items-center">
                                 <label class="col-sm-2 col-form-label fs-5 fw-bold">选择活动：</label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="activity" placeholder="请输入" required>
+                                    <select class="form-select" name="activity_id" id="activity-select" required>
+                                        <option value="">请选择</option>
+                                        {% for act in activities %}
+                                        <option value="{{ act.activity_id }}">{{ act.activity_name }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
                             <div class="mb-4 row">
@@ -85,13 +99,20 @@
                                 <div class="row mb-2 align-items-center">
                                     <label class="col-sm-2 col-form-label">申请批准老师：</label>
                                     <div class="col-sm-4">
-                                        <input type="text" class="form-control" name="teacher" placeholder="请输入" required>
+                                        <select class="form-select" name="teacher_id" id="teacher-select" required>
+                                            <option value="">请选择</option>
+                                            {% for act in activities %}
+                                                {% if act.supervisor_id and act.supervisor_name %}
+                                                <option value="{{ act.supervisor_id }}">{{ act.supervisor_name }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="row align-items-center">
                                     <label class="col-sm-2 col-form-label">请假时间：</label>
                                     <div class="col-sm-4">
-                                        <input type="text" class="form-control" name="leave_time" placeholder="请输入" required>
+                                        <input type="date" class="form-control" name="leave_time" required>
                                     </div>
                                 </div>
                             </div>
