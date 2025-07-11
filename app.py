@@ -11,9 +11,17 @@ from teacher.personcenter import bp as teacher_personcenter_bp
 from teacher.funding import bp as teacher_funding_bp
 from teacher.approval import bp as teacher_approval_bp
 from extensions import get_db, init_db, login_required, role_required, admin_required
+from admin.routes import admin_bp  # 导入管理员蓝图
+from admin.venues import venues_bp
+from admin.activity_routes import admin_activity
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # 生产环境请使用更安全的密钥
+app.secret_key = 'tP6Xe8mZ3vQJyKfBwN2Lc7sD1gH5Yr9VnM4kT0xGpU'  # 添加密钥用于session
+
+# 注册蓝图
+app.register_blueprint(admin_bp)  # admin_bp已经有/admin前缀
+app.register_blueprint(venues_bp)  # venues_bp已经有/admin前缀
+app.register_blueprint(admin_activity, url_prefix='/admin')
 
 # 数据库文件路径
 DATABASE = 'University_activit.db'
@@ -25,6 +33,14 @@ DATABASE = 'University_activit.db'
 # 装饰器：角色验证
 
 # 装饰器：管理员验证
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_type' not in session or session['user_type'] != 'teacher' or not session.get('is_admin'):
+            flash('需要管理员权限', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # 首页路由
 @app.route('/')
@@ -65,8 +81,21 @@ def login():
                 session['username'] = user['name']
                 session['college'] = user['college']
                 
-                # 根据用户类型重定向
-                if user['user_type'] == 'student':
+                # 如果是教师，检查是否为管理员
+                if user['user_type'] == 'teacher':
+                    teacher = db.execute(
+                        'SELECT is_admin FROM teachers WHERE teacher_id = ?',
+                        (user['user_id'],)
+                    ).fetchone()
+                    
+                    if teacher and teacher['is_admin']:
+                        session['is_admin'] = True
+                        return redirect(url_for('admin.dashboard'))  # 使用蓝图的URL
+                    else:
+                        session['is_admin'] = False
+                        return redirect(url_for('teacher_dashboard'))
+                elif user['user_type'] == 'student':
+                    session['is_admin'] = False
                     return redirect(url_for('student_dashboard'))
                 elif user['user_type'] == 'teacher':
                     return redirect(url_for('teacher_dashboard.dashboard'))
@@ -281,35 +310,43 @@ app.register_blueprint(teacher_approval_bp)
 
 # ==================== 管理员路由 ====================
 
-@app.route('/admin/venues')
+@app.route('/admin/dashboard')
 @login_required
 @admin_required
-def admin_venues():
-    """管理员场地管理"""
+def admin_dashboard():
+    """管理员主页"""
     db = get_db()
     try:
-        # 获取所有场地信息
-        venues = db.execute('SELECT * FROM venues ORDER BY venue_name').fetchall()
+        # 获取管理员信息
+        admin_info = db.execute('''
+            SELECT t.*, u.name, u.college 
+            FROM teachers t
+            JOIN users u ON t.teacher_id = u.user_id
+            WHERE t.teacher_id = ? AND t.is_admin = 1
+        ''', (session['user_id'],)).fetchone()
         
-        # 获取场地预约信息
-        venue_bookings = db.execute('''
-            SELECT vb.*, v.venue_name, a.activity_name, u.name as organizer_name
-            FROM venue_bookings vb
-            JOIN venues v ON vb.venue_id = v.venue_id
-            JOIN activities a ON vb.activity_id = a.activity_id
-            JOIN users u ON vb.organizer_id = u.user_id
-            ORDER BY vb.start_time DESC
+        # 获取所有待审核的活动
+        pending_activities = db.execute('''
+            SELECT a.*, u.name as organizer_name, t.name as supervisor_name
+            FROM activities a
+            JOIN users u ON a.organizer_id = u.user_id
+            LEFT JOIN users t ON a.supervisor_id = t.user_id
+            WHERE a.status = 'pending_review'
+            ORDER BY a.created_at DESC
         ''').fetchall()
         
-        return render_template('admin/venues.html',
-                             venues=venues,
-                             venue_bookings=venue_bookings)
+
+        return render_template('admin/dashboard.html',
+                             admin_info=admin_info,
+                             pending_activities=pending_activities,
+                             )
     
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('admin/venues.html',
-                             venues=[],
-                             venue_bookings=[])
+        return render_template('admin/dashboard.html',
+                             admin_info=None,
+                             pending_activities=[],
+                             )
     finally:
         db.close()
 
