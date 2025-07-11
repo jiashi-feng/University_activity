@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人课表 - 学生活动管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f5f7fa; }
+        .sidebar {
+            background: #1a237e;
+            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            border-radius: 12px 0 0 12px;
+        }
+        .sidebar .nav-link.active {
+            background: #fff;
+            color: #1a237e !important;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .sidebar .nav-link {
+            color: #fff !important;
+            margin-bottom: 8px;
+        }
+        .sidebar .nav-link:hover {
+            background: #3949ab;
+            color: #fff !important;
+        }
+        .sidebar-title {
+            border-bottom: 1px solid #3949ab;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .sidebar-title span {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            text-align: center;
+            width: 100%;
+        }
+        .main-content {
+            margin-left: 16.6667%;
+            padding: 2rem 2rem 2rem 2rem;
+        }
+        .schedule-card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            padding: 2rem 2rem 2rem 2rem;
+            border: 2px solid #cfd8e3;
+        }
+        .schedule-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+        }
+        .schedule-table th, .schedule-table td {
+            text-align: center;
+            vertical-align: middle;
+            border: none;
+            font-size: 1.15rem;
+            padding: 0.7rem 0.5rem;
+        }
+        .schedule-table th {
+            background: #f3f4f8;
+            font-size: 1.2rem;
+        }
+        .schedule-table tr:nth-child(even) td {
+            background: #f7f8fa;
+        }
+        .schedule-table tr:nth-child(odd) td {
+            background: #fff;
+        }
+        .schedule-table td:first-child {
+            text-align: left;
+            font-size: 1rem;
+            color: #333;
+        }
+        .schedule-ops {
+            background: #1a237e;
+            border-radius: 20px;
+            padding: 1.5rem 2rem;
+            margin-top: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 1.5rem;
+        }
+        .schedule-ops label {
+            color: #fff;
+            font-size: 1.15rem;
+            margin-right: 0.5rem;
+        }
+        .schedule-ops select, .schedule-ops input[type=text] {
+            border-radius: 8px;
+            border: none;
+            padding: 0.3rem 1rem;
+            font-size: 1.1rem;
+            min-width: 120px;
+        }
+        .schedule-ops input[type=text] {
+            min-width: 180px;
+        }
+        .schedule-ops button {
+            background: #90caf9;
+            color: #1a237e;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            padding: 0.4rem 1.5rem;
+            margin-left: 0.5rem;
+        }
+        .schedule-ops button:hover {
+            background: #64b5f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="padding-left:0;">
+        <div class="row">
+            <!-- 左侧导航栏 -->
+            <nav class="col-md-2 d-none d-md-block sidebar p-0" style="background: #1a237e; min-height: 100vh; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; border-radius: 12px 0 0 12px; box-shadow: 0 0 0 0;">
+                <div class="d-flex flex-column align-items-start h-100">
+                    <div class="sidebar-title d-flex justify-content-center align-items-center flex-column" style="height: 120px; border-bottom: 1px solid #3949ab; width: 100%;">
+                        <a href="/student/dashboard" class="text-decoration-none w-100 d-flex justify-content-center align-items-center">
+                            <span class="fs-2 fw-bold text-white text-center" style="width: 100%;">学生活动管理</span>
+                        </a>
+                    </div>
+                    <ul class="nav flex-column w-100 mt-5 px-2">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/finished_activity' %}active{% endif %}" href="/student/finished_activity">已结束活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_view' %}active{% endif %}" href="/student/profile_view">个人信息查看</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_edit' %}active{% endif %}" href="/student/profile_edit">个人信息修改</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/schedule' %}active{% endif %}" href="/student/schedule">个人课表</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/leave' %}active{% endif %}" href="/student/leave">活动请假</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/message' %}active{% endif %}" href="/student/message">消息</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <!-- 主内容区 -->
+            <main class="col-md-10 offset-md-2 main-content">
+                <div class="schedule-card">
+                    <div class="schedule-title mb-4">个人课表</div>
+                    {% if msg %}
+                    <div class="alert alert-info">{{ msg }}</div>
+                    {% endif %}
+                    <form class="schedule-ops" method="post">
+                        <label>时间：</label>
+                        <select name="weekday">
+                            <option value="1">星期一</option>
+                            <option value="2">星期二</option>
+                            <option value="3">星期三</option>
+                            <option value="4">星期四</option>
+                            <option value="5">星期五</option>
+                            <option value="6">星期六</option>
+                            <option value="7">星期日</option>
+                        </select>
+                        <label>课节：</label>
+                        <select name="time_slot">
+                            <option value="08:00-09:30">1~2节</option>
+                            <option value="10:00-11:30">3~4节</option>
+                            <option value="14:00-15:30">5~6节</option>
+                            <option value="16:00-17:30">7~8节</option>
+                            <option value="18:30-20:00">9~10节</option>
+                        </select>
+                        <label>名称：</label>
+                        <input type="text" name="course_name" placeholder="请输入">
+                        <button type="submit" name="action" value="add">增加</button>
+                        <button type="submit" name="action" value="update">修改</button>
+                        <button type="submit" name="action" value="delete">删除</button>
+                        <input type="hidden" name="start_time" id="start_time_input">
+                        <input type="hidden" name="end_time" id="end_time_input">
+                    </form>
+                    <script>
+                    // 自动同步课节下拉框到隐藏时间字段
+                    document.querySelector('form.schedule-ops').addEventListener('submit', function(e) {
+                        var slot = this.time_slot.value.split('-');
+                        this.start_time.value = slot[0];
+                        this.end_time.value = slot[1];
+                    });
+                    </script>
+                    <table class="schedule-table w-100 mb-4" border="0">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>星期一</th>
+                                <th>星期二</th>
+                                <th>星期三</th>
+                                <th>星期四</th>
+                                <th>星期五</th>
+                                <th>星期六</th>
+                                <th>星期日</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set time_slots = [
+                                ('1~2节 (8:00~9:30)', '08:00', '09:30'),
+                                ('3~4节 (10:00~11:30)', '10:00', '11:30'),
+                                ('5~6节 (14:00~15:30)', '14:00', '15:30'),
+                                ('7~8节 (16:00~17:30)', '16:00', '17:30'),
+                                ('9~10节 (18:30~20:00)', '18:30', '20:00')
+                            ] %}
+                            {% for slot, start, end in time_slots %}
+                            <tr>
+                                <td>{{ slot }}</td>
+                                {% for weekday in range(1,8) %}
+                                    <td>
+                                        {{ schedule_dict[(weekday, start, end)] if (weekday, start, end) in schedule_dict else '' }}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html> 

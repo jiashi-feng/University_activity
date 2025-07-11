@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动添加 - 学生活动管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f5f7fa; }
+        .sidebar {
+            background: #1a237e;
+            min-height: 100vh;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .sidebar .nav-link.active {
+            background: #fff;
+            color: #1a237e !important;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .sidebar .nav-link {
+            color: #fff !important;
+            margin-bottom: 8px;
+        }
+        .sidebar .nav-link:hover {
+            background: #3949ab;
+            color: #fff !important;
+        }
+        .sidebar-title {
+            border-bottom: 1px solid #3949ab;
+            padding: 2rem 0 1rem 0;
+            text-align: center;
+        }
+        .sidebar-title span {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+        .main-content {
+            margin-left: 16.6667%;
+            padding: 2rem 2rem 2rem 2rem;
+        }
+        .form-label { font-weight: bold; }
+        .form-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2rem 2rem 1rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .btn-primary {
+            background: #1a237e;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            padding: 0.75rem 3rem;
+        }
+        .table-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .table thead { background: #e3f0ff; }
+        .table-recommend {
+            background: #e3f6fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="padding-left:0;">
+        <div class="row">
+            <!-- 左侧导航栏 -->
+            <nav class="col-md-2 d-none d-md-block sidebar p-0" style="background: #1a237e; min-height: 100vh; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; border-radius: 12px 0 0 12px; box-shadow: 0 0 0 0;">
+                <div class="d-flex flex-column align-items-start h-100">
+                    <div class="sidebar-title d-flex justify-content-center align-items-center flex-column" style="height: 120px; border-bottom: 1px solid #3949ab; width: 100%;">
+                        <a href="/student/dashboard" class="text-decoration-none w-100 d-flex justify-content-center align-items-center">
+                            <span class="fs-2 fw-bold text-white text-center" style="width: 100%;">学生活动管理</span>
+                        </a>
+                    </div>
+                    <ul class="nav flex-column w-100 mt-5 px-2">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/finished_activity' %}active{% endif %}" href="/student/finished_activity">已结束活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_view' %}active{% endif %}" href="/student/profile_view">个人信息查看</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_edit' %}active{% endif %}" href="/student/profile_edit">个人信息修改</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/schedule' %}active{% endif %}" href="/student/schedule">个人课表</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/leave' %}active{% endif %}" href="/student/leave">活动请假</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/message' %}active{% endif %}" href="/student/message">消息</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <!-- 主内容区 -->
+            <main class="col-md-10 offset-md-2 main-content">
+                <div class="row">
+                    <!-- 活动添加表单 -->
+                    <div class="col-md-6">
+                        <div class="form-section mb-4">
+                            <h3 class="mb-4">活动添加</h3>
+                            <form>
+                                <div class="mb-4 row align-items-center">
+                                    <label class="col-sm-3 col-form-label form-label">活动名称：</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" placeholder="请输入" name="activity_name">
+                                    </div>
+                                </div>
+                                <div class="mb-4 row align-items-center">
+                                    <label class="col-sm-3 col-form-label form-label">活动开始时间：</label>
+                                    <div class="col-sm-9">
+                                        <input type="date" class="form-control" placeholder="请输入" name="activity_time">
+                                    </div>
+                                </div>
+                                <div class="mb-4 row align-items-center">
+                                    <label class="col-sm-3 col-form-label form-label">活动类型：</label>
+                                    <div class="col-sm-9">
+                                        <select class="form-control" name="activity_level">
+                                            <option value="indoor">indoor（室内）</option>
+                                            <option value="outdoor">outdoor（室外）</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-primary">确认添加</button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- 活动推荐表 -->
+                        <div class="table-section mt-4">
+                            <div class="mb-2 fw-bold">活动推荐：</div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-recommend mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>活动名称</th>
+                                            <th>活动开始时间</th>
+                                            <th>所需特长</th>
+                                            <th>活动余额</th>
+                                            <th>活动状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>游泳比赛</td><td>6.15~6.18</td><td>体育</td><td>8/10</td><td>待开始</td>
+                                        </tr>
+                                        <tr>
+                                            <td>书法讲座</td><td>6.18~6.19</td><td>书法</td><td>148/150</td><td>待开始</td>
+                                        </tr>
+                                        <tr>
+                                            <td>体质大赛</td><td>5.20~5.31</td><td>体育</td><td>20/25</td><td>进行中</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 活动查询和活动列表 -->
+                    <div class="col-md-6">
+                        <div class="form-section mb-4">
+                            <h4 class="mb-3">活动查询</h4>
+                            <form class="row g-3 align-items-center" id="activity-query-form">
+                                <div class="col-12 mb-2">
+                                    <label class="form-label">活动名称</label>
+                                    <input type="text" class="form-control" name="activity_name" placeholder="请输入">
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <label class="form-label">活动类型</label>
+                                    <select class="form-control" name="activity_level">
+                                        <option value="">不限</option>
+                                        <option value="indoor">indoor（室内）</option>
+                                        <option value="outdoor">outdoor（室外）</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <label class="form-label">活动开始时间</label>
+                                    <input type="date" class="form-control" name="activity_time" placeholder="请选择活动开始时间">
+                                </div>
+                                <div class="col-12 d-flex justify-content-start mt-2">
+                                    <button type="submit" class="btn btn-primary me-2">查询</button>
+                                    <button type="button" class="btn btn-secondary" id="reset-query">重置</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="table-section mt-4">
+                            <div class="mb-2 fw-bold">活动列表</div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>活动名称</th>
+                                            <th>活动开始时间</th>
+                                            <th>所需特长</th>
+                                            <th>活动余额</th>
+                                            <th>活动状态</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="activity-list-tbody">
+                                        <!-- 查询结果将插入这里 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// 活动添加表单提交
+const addForm = document.querySelector('.form-section form');
+if (addForm) {
+    addForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const activity_name = addForm.querySelector('[name="activity_name"]').value.trim();
+        const activity_time = addForm.querySelector('[name="activity_time"]').value.trim();
+        const activity_level = addForm.querySelector('[name="activity_level"]').value.trim();
+        axios.post('/student/add_activity', {
+            activity_name, activity_time, activity_level
+        }).then(res => {
+            alert(res.data.msg);
+            if (res.data.success) {
+                addForm.reset();
+            }
+        }).catch(err => {
+            if (err.response && err.response.data && err.response.data.msg) {
+                alert(err.response.data.msg);
+            } else {
+                alert('添加失败');
+            }
+        });
+    });
+}
+
+// 活动查询表单提交
+const queryForm = document.getElementById('activity-query-form');
+if (queryForm) {
+    queryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const activity_name = queryForm.querySelector('[name="activity_name"]').value.trim();
+        const activity_time = queryForm.querySelector('[name="activity_time"]').value.trim();
+        const activity_level = queryForm.querySelector('[name="activity_level"]').value.trim();
+        axios.post('/student/query_activities', {
+            activity_name, activity_time, activity_level
+        }).then(res => {
+            if (res.data.success) {
+                renderActivityList(res.data.activities);
+            } else {
+                alert(res.data.msg);
+            }
+        }).catch(err => {
+            alert('查询失败');
+        });
+    });
+    // 重置按钮
+    document.getElementById('reset-query').onclick = function() {
+        queryForm.reset();
+        document.getElementById('activity-list-tbody').innerHTML = '';
+    };
+}
+// 动态渲染活动列表
+function renderActivityList(activities) {
+    const tbody = document.getElementById('activity-list-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!activities || activities.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">无符合条件的活动</td></tr>';
+        return;
+    }
+    activities.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${a.activity_name}</td><td>${a.start_time}</td><td>${a.required_skills||''}</td><td>${a.balance}</td><td>${a.status}</td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// 推荐活动AJAX渲染
+function loadRecommendActivities() {
+    axios.get('/student/recommend_activities').then(res => {
+        if (res.data.success) {
+            const tbody = document.querySelector('.table-recommend tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            res.data.activities.forEach(a => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${a.activity_name}</td><td>${a.start_time}</td><td>${a.required_skills||''}</td><td>${a.balance}</td><td>${a.status}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+window.addEventListener('DOMContentLoaded', loadRecommendActivities);
+</script> 
