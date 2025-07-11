@@ -634,22 +634,120 @@ def finished_activity():
 @login_required
 @role_required('student')
 def profile_view():
-    """个人信息查看页面"""
-    return render_template('student/profile_view.html')
+    db = get_db()
+    try:
+        user_id = session['user_id']
+        # 获取学生基本信息（只用存在的字段）
+        student_info = db.execute('''
+            SELECT s.student_number, s.grade, s.major, s.class_name, s.score, s.activity_completion_rate, u.name, u.college, u.phone
+            FROM students s
+            JOIN users u ON s.student_id = u.user_id
+            WHERE s.student_id = ?
+        ''', (user_id,)).fetchone()
+        # 获取学生特长
+        student_skills = db.execute('''
+            SELECT skill_name, skill_level FROM student_skills WHERE student_id = ?
+        ''', (user_id,)).fetchall()
+        # 获取已完成活动
+        finished_activities = db.execute('''
+            SELECT a.activity_name
+            FROM activities a
+            JOIN activity_participants ap ON a.activity_id = ap.activity_id
+            WHERE ap.student_id = ? AND ap.status = 'completed' AND a.status = 'approved'
+        ''', (user_id,)).fetchall()
+        return render_template('student/profile_view.html', student_info=student_info, student_skills=student_skills, finished_activities=finished_activities)
+    except Exception as e:
+        flash(f'获取个人信息失败：{str(e)}', 'error')
+        return render_template('student/profile_view.html', student_info=None, student_skills=[], finished_activities=[])
+    finally:
+        db.close()
 
-@app.route('/student/profile_edit')
+@app.route('/student/profile_edit', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def profile_edit():
-    """个人信息修改页面"""
-    return render_template('student/profile_edit.html')
+    db = get_db()
+    user_id = session['user_id']
+    msg = ''
+    try:
+        if request.method == 'POST':
+            # 只允许修改部分字段
+            name = request.form.get('name', '').strip()
+            student_number = request.form.get('student_number', '').strip()
+            grade = request.form.get('grade', '').strip()
+            major = request.form.get('major', '').strip()
+            class_name = request.form.get('class_name', '').strip()
+            college = request.form.get('college', '').strip()
+            phone = request.form.get('phone', '').strip()
+            # 简单校验
+            if not all([name, student_number, grade, major, class_name, college]):
+                msg = '请填写完整信息！'
+            else:
+                db.execute('UPDATE users SET name=?, college=?, phone=? WHERE user_id=?', (name, college, phone, user_id))
+                db.execute('UPDATE students SET student_number=?, grade=?, major=?, class_name=? WHERE student_id=?', (student_number, grade, major, class_name, user_id))
+                db.commit()
+                msg = '信息已更新！'
+        # 查询当前信息
+        student_info = db.execute('''
+            SELECT s.student_number, s.grade, s.major, s.class_name, s.score, s.activity_completion_rate, u.name, u.college, u.phone
+            FROM students s
+            JOIN users u ON s.student_id = u.user_id
+            WHERE s.student_id = ?
+        ''', (user_id,)).fetchone()
+        return render_template('student/profile_edit.html', student_info=student_info, msg=msg)
+    except Exception as e:
+        flash(f'获取或保存信息失败：{str(e)}', 'error')
+        return render_template('student/profile_edit.html', student_info=None, msg='')
+    finally:
+        db.close()
 
-@app.route('/student/schedule')
+@app.route('/student/schedule', methods=['GET', 'POST'])
 @login_required
 @role_required('student')
 def schedule():
-    """个人课表页面"""
-    return render_template('student/schedule.html')
+    db = get_db()
+    msg = ''
+    try:
+        user_id = session['user_id']
+        if request.method == 'POST':
+            action = request.form.get('action')
+            weekday = int(request.form.get('weekday'))
+            start_time = request.form.get('start_time')
+            end_time = request.form.get('end_time')
+            course_name = request.form.get('course_name', '').strip()
+            if action == 'add':
+                # 检查是否已存在
+                exists = db.execute('''SELECT * FROM student_schedule WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', (user_id, weekday, start_time, end_time)).fetchone()
+                if exists:
+                    msg = '该时间段已有课程，可选择修改！'
+                else:
+                    db.execute('''INSERT INTO student_schedule (student_id, weekday, start_time, end_time, course_name) VALUES (?, ?, ?, ?, ?)''', (user_id, weekday, start_time, end_time, course_name))
+                    db.commit()
+                    msg = '课程已添加！'
+            elif action == 'update':
+                db.execute('''UPDATE student_schedule SET course_name=? WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', (course_name, user_id, weekday, start_time, end_time))
+                db.commit()
+                msg = '课程已更新！'
+            elif action == 'delete':
+                db.execute('''DELETE FROM student_schedule WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', (user_id, weekday, start_time, end_time))
+                db.commit()
+                msg = '课程已删除！'
+        # 查询当前学生所有课表
+        schedule_rows = db.execute('''
+            SELECT weekday, start_time, end_time, course_name
+            FROM student_schedule
+            WHERE student_id = ?
+        ''', (user_id,)).fetchall()
+        schedule_dict = {}
+        for row in schedule_rows:
+            key = (row['weekday'], row['start_time'], row['end_time'])
+            schedule_dict[key] = row['course_name']
+        return render_template('student/schedule.html', schedule_dict=schedule_dict, msg=msg)
+    except Exception as e:
+        flash(f'获取课表失败：{str(e)}', 'error')
+        return render_template('student/schedule.html', schedule_dict={}, msg='')
+    finally:
+        db.close()
 
 @app.route('/student/leave', methods=['GET', 'POST'])
 @login_required
@@ -707,7 +805,20 @@ def student_leave():
 @login_required
 @role_required('student')
 def student_message():
-    return render_template('student/message.html')
+    db = get_db()
+    try:
+        user_id = session['user_id']
+        notifications = db.execute('''
+            SELECT * FROM notifications
+            WHERE recipient_id = ?
+            ORDER BY created_at DESC
+        ''', (user_id,)).fetchall()
+        return render_template('student/message.html', notifications=notifications)
+    except Exception as e:
+        flash(f'获取消息失败：{str(e)}', 'error')
+        return render_template('student/message.html', notifications=[])
+    finally:
+        db.close()
 
 # ==================== 教师路由 ====================
 

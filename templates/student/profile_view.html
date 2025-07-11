@@ -135,33 +135,45 @@
                         <div class="tab-pane fade show active" id="base-info">
                             <table class="info-table w-100 mb-4">
                                 <tr>
-                                    <th>姓名</th><td>王小明</td>
-                                    <th>专业</th><td>软件工程</td>
+                                    <th>姓名</th><td>{{ student_info.name if student_info else '' }}</td>
+                                    <th>专业</th><td>{{ student_info.major if student_info else '' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>性别</th>
-                                    <td>
-                                        <input type="radio" checked disabled> 男
-                                        <input type="radio" disabled> 女
-                                    </td>
-                                    <th>学院</th><td>计算机学院</td>
+                                    <th>学院</th><td>{{ student_info.college if student_info else '' }}</td>
+                                    <th>班级</th><td>{{ student_info.class_name if student_info else '' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>学号</th><td>123456789</td>
-                                    <th>电子邮箱</th><td>123456789@qq.com</td>
+                                    <th>学号</th><td>{{ student_info.student_number if student_info else '' }}</td>
+                                    <th>联系电话</th><td>{{ student_info.phone if student_info else '' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>联系电话</th><td>123456789</td>
-                                    <th>爱好</th><td>游泳、健身、书法</td>
+                                    <th>年级</th><td>{{ student_info.grade if student_info else '' }}</td>
+                                    <th>综合得分</th><td>{{ student_info.score if student_info else '' }}</td>
                                 </tr>
                                 <tr>
-                                    <th>年级</th><td>大一</td>
+                                    <th>活动完成率</th><td>{{ student_info.activity_completion_rate if student_info else '' }}</td>
                                     <th></th><td></td>
                                 </tr>
                             </table>
+                            {% if student_skills and student_skills|length > 0 %}
+                            <div class="mb-3">
+                                <span class="fw-bold">特长：</span>
+                                {% for skill in student_skills %}
+                                    <span>{{ skill.skill_name }}(Lv{{ skill.skill_level }}){% if not loop.last %}、{% endif %}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                             <div class="activity-box">
                                 <div class="fw-bold mb-2">已完成活动：</div>
-                                <div>辩论赛、游泳比赛</div>
+                                {% if finished_activities and finished_activities|length > 0 %}
+                                    <div>
+                                        {% for act in finished_activities %}
+                                            <span>{{ act.activity_name }}</span>{% if not loop.last %}、{% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div>暂无已完成活动</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

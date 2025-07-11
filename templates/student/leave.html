@@ -67,12 +67,6 @@
                 <div class="row mb-4">
                     <div class="col-12">
                         <h2 class="fw-bold mb-4 mt-5">活动请假</h2>
-                        <div class="mb-4 d-flex gap-4">
-                            <span class="badge bg-primary">已报名：{{ count_applied }}</span>
-                            <span class="badge bg-success">进行中：{{ count_in_progress }}</span>
-                            <span class="badge bg-warning text-dark">待审核：{{ count_pending }}</span>
-                            <span class="badge bg-info text-dark">已完成：{{ count_completed }}</span>
-                        </div>
                         <form method="post" enctype="multipart/form-data" class="mb-5">
                             {% if msg %}
                             <div class="alert alert-info">{{ msg }}</div>

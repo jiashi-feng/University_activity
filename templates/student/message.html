@@ -83,26 +83,19 @@
                 <div class="row mb-4">
                     <div class="col-12">
                         <h2 class="fw-bold mb-4 mt-5">消息</h2>
-                        <div class="message-card">
-                            游泳馆将于于6.1闭馆，请提前做好准备
-                            <span class="message-date">2019/05/07</span>
-                        </div>
-                        <div class="message-card">
-                            注意：辩论赛活动由于最近考试将延期
-                            <span class="message-date">2019/05/07</span>
-                        </div>
-                        <div class="message-card">
-                            注意：辩论赛活动由于最近考试将延期
-                            <span class="message-date">2019/05/07</span>
-                        </div>
-                        <div class="message-card">
-                            注意：辩论赛活动由于最近考试将延期
-                            <span class="message-date">2019/05/07</span>
-                        </div>
-                        <div class="message-card">
-                            您申请的活动：“人工智能讲座”已通过
-                            <span class="message-date">2019/05/07</span>
-                        </div>
+                        {% if notifications and notifications|length > 0 %}
+                            {% for n in notifications %}
+                                <div class="message-card">
+                                    <div>
+                                        <span class="fw-bold">{{ n['title'] }}</span><br>
+                                        {{ n['content'] }}
+                                    </div>
+                                    <span class="message-date">{{ n['created_at'][:10] }}</span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">暂无消息</div>
+                        {% endif %}
                     </div>
                 </div>
             </main>

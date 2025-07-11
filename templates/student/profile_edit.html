@@ -128,46 +128,38 @@
             <main class="col-md-10 offset-md-2 main-content">
                 <div class="edit-card">
                     <div class="edit-title mb-4">个人信息</div>
-                    <form>
+                    <form method="post">
+                        {% if msg %}
+                        <div class="alert alert-info">{{ msg }}</div>
+                        {% endif %}
                         <table class="edit-table w-100 mb-4">
                             <tr>
                                 <th>姓名</th>
-                                <td colspan="3"><input type="text" class="form-control" value="tori"></td>
-                            </tr>
-                            <tr>
-                                <th>性别</th>
-                                <td colspan="3">
-                                    <input type="radio" name="gender" checked> 男
-                                    <input type="radio" name="gender"> 女
-                                </td>
+                                <td colspan="3"><input type="text" class="form-control" name="name" value="{{ student_info.name if student_info else '' }}" required></td>
                             </tr>
                             <tr>
                                 <th>学号</th>
-                                <td colspan="3"><input type="text" class="form-control" value="123456789"></td>
+                                <td colspan="3"><input type="text" class="form-control" name="student_number" value="{{ student_info.student_number if student_info else '' }}" required></td>
                             </tr>
                             <tr>
                                 <th>联系电话</th>
-                                <td colspan="3"><input type="text" class="form-control" value="123456789"></td>
+                                <td colspan="3"><input type="text" class="form-control" name="phone" value="{{ student_info.phone if student_info else '' }}"></td>
                             </tr>
                             <tr>
                                 <th>年级</th>
-                                <td colspan="3"><input type="text" class="form-control" value="大一"></td>
+                                <td colspan="3"><input type="text" class="form-control" name="grade" value="{{ student_info.grade if student_info else '' }}" required></td>
                             </tr>
                             <tr>
                                 <th>专业</th>
-                                <td colspan="3"><input type="text" class="form-control" value="软件工程"></td>
+                                <td colspan="3"><input type="text" class="form-control" name="major" value="{{ student_info.major if student_info else '' }}" required></td>
                             </tr>
                             <tr>
                                 <th>学院</th>
-                                <td colspan="3"><input type="text" class="form-control" value="计算机学院"></td>
+                                <td colspan="3"><input type="text" class="form-control" name="college" value="{{ student_info.college if student_info else '' }}" required></td>
                             </tr>
                             <tr>
-                                <th>电子邮箱</th>
-                                <td colspan="3"><input type="email" class="form-control" value="12345678910@qq.com"></td>
-                            </tr>
-                            <tr>
-                                <th>爱好</th>
-                                <td colspan="3"><input type="text" class="form-control" value="游泳、健身、音乐"></td>
+                                <th>班级</th>
+                                <td colspan="3"><input type="text" class="form-control" name="class_name" value="{{ student_info.class_name if student_info else '' }}" required></td>
                             </tr>
                         </table>
                         <div class="text-center mt-4">
