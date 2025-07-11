@@ -4,12 +4,14 @@ from datetime import datetime, timedelta
 import os
 from functools import wraps
 from admin.routes import admin_bp  # 导入管理员蓝图
+from admin.venues import venues_bp
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # 生产环境请使用更安全的密钥
+app.secret_key = 'your-secret-key'  # 添加密钥用于session
 
 # 注册蓝图
-app.register_blueprint(admin_bp)
+app.register_blueprint(admin_bp)  # admin_bp已经有/admin前缀
+app.register_blueprint(venues_bp)  # venues_bp已经有/admin前缀
 
 # 数据库文件路径
 DATABASE = 'University_activit.db'
@@ -477,38 +479,6 @@ def admin_dashboard():
                              admin_info=None,
                              pending_activities=[],
                              activity_stats=None)
-    finally:
-        db.close()
-
-@app.route('/admin/venues')
-@login_required
-@admin_required
-def admin_venues():
-    """管理员场地管理"""
-    db = get_db()
-    try:
-        # 获取所有场地信息
-        venues = db.execute('SELECT * FROM venues ORDER BY venue_name').fetchall()
-        
-        # 获取场地预约信息
-        venue_bookings = db.execute('''
-            SELECT vb.*, v.venue_name, a.activity_name, u.name as organizer_name
-            FROM venue_bookings vb
-            JOIN venues v ON vb.venue_id = v.venue_id
-            JOIN activities a ON vb.activity_id = a.activity_id
-            JOIN users u ON vb.organizer_id = u.user_id
-            ORDER BY vb.start_time DESC
-        ''').fetchall()
-        
-        return render_template('admin/venues.html',
-                             venues=venues,
-                             venue_bookings=venue_bookings)
-    
-    except Exception as e:
-        flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('admin/venues.html',
-                             venues=[],
-                             venue_bookings=[])
     finally:
         db.close()
 

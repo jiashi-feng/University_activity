@@ -1,20 +1,300 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>场地管理 - 高校活动管理系统</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- 复用dashboard.html的样式 -->
-    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
-</head>
-<body>
-    <!-- 这里将包含导航栏和场地管理的具体内容 -->
-    <div class="main-content">
-        <h2>场地管理</h2>
-        <!-- 场地管理的具体内容将在这里实现 -->
+{% extends "admin/base.html" %}
+
+{% block title %}场地管理{% endblock %}
+
+{% block content %}
+<div class="venues-dashboard">
+    <!-- 场地概览 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-building me-2"></i>总场地数</h5>
+                    <h2 class="mb-0">{{ venue_stats.total }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-check-circle me-2"></i>可用场地</h5>
+                    <h2 class="mb-0">{{ venue_stats.available }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-tools me-2"></i>维护中</h5>
+                    <h2 class="mb-0">{{ venue_stats.maintenance }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-ban me-2"></i>不可用</h5>
+                    <h2 class="mb-0">{{ venue_stats.unavailable }}</h2>
+                </div>
+            </div>
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> 
+
+    <!-- 场地列表 -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>场地列表</h5>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addVenueModal">
+                <i class="fas fa-plus me-1"></i>添加场地
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>场地名称</th>
+                            <th>位置</th>
+                            <th>容量</th>
+                            <th>设施</th>
+                            <th>当前状态</th>
+                            <th>使用情况</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for venue in venues %}
+                        <tr>
+                            <td>{{ venue.venue_name }}</td>
+                            <td>{{ venue.location }}</td>
+                            <td>{{ venue.capacity }}人</td>
+                            <td>
+                                {% for facility in venue.facilities.split(',') %}
+                                <span class="badge bg-info">{{ facility }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if venue.status == 'available' %}
+                                <span class="badge bg-success">可用</span>
+                                {% elif venue.status == 'maintenance' %}
+                                <span class="badge bg-warning">维护中</span>
+                                {% else %}
+                                <span class="badge bg-danger">不可用</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if venue.current_booking %}
+                                <small class="text-muted">
+                                    当前：{{ venue.current_booking.activity_name }}<br>
+                                    结束时间：{{ venue.current_booking.end_time.strftime('%H:%M') }}
+                                </small>
+                                {% else %}
+                                <span class="text-success">空闲</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" data-venue-id="{{ venue.venue_id }}" data-action="details">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" data-venue-id="{{ venue.venue_id }}" data-action="edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-success" data-venue-id="{{ venue.venue_id }}" data-action="bookings">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 今日预约时间表 -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-calendar-day me-2"></i>今日场地使用时间表</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>时间段</th>
+                            {% for venue in venues %}
+                            <th>{{ venue.venue_name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hour in range(8, 22) %}
+                        <tr>
+                            <td>{{ '%02d:00' % hour }}</td>
+                            {% for venue in venues %}
+                            <td class="venue-timeslot" data-venue-id="{{ venue.venue_id }}" data-hour="{{ hour }}">
+                                {% if venue.bookings.get(hour) %}
+                                <div class="booking-block" style="background-color: #e3f2fd;">
+                                    {{ venue.bookings[hour].activity_name }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加场地模态框 -->
+<div class="modal fade" id="addVenueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加新场地</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addVenueForm">
+                    <div class="mb-3">
+                        <label class="form-label">场地名称</label>
+                        <input type="text" class="form-control" name="venue_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">位置</label>
+                        <input type="text" class="form-control" name="location" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">容量（人数）</label>
+                        <input type="number" class="form-control" name="capacity" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">设施（用逗号分隔）</label>
+                        <input type="text" class="form-control" name="facilities" placeholder="例如：投影仪,音响,空调">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddVenue()">添加</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.venues-dashboard .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: none;
+}
+.venue-timeslot {
+    height: 50px;
+    position: relative;
+    padding: 0;
+}
+.booking-block {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.badge {
+    font-weight: normal;
+    margin-right: 4px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 添加场地表单提交
+    window.submitAddVenue = function() {
+        const form = document.getElementById('addVenueForm');
+        const formData = new FormData(form);
+        
+        fetch('{{ url_for("admin_venues.add_venue") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('场地添加成功！');
+                location.reload();
+            } else {
+                alert('添加失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('添加失败：' + error.message);
+        });
+    };
+
+    // 事件委托处理按钮点击
+    document.querySelector('.table').addEventListener('click', function(e) {
+        const button = e.target.closest('button[data-venue-id]');
+        if (!button) return;
+
+        const venueId = button.dataset.venueId;
+        const action = button.dataset.action;
+
+        switch (action) {
+            case 'details':
+                showVenueDetails(venueId);
+                break;
+            case 'edit':
+                editVenue(venueId);
+                break;
+            case 'bookings':
+                showBookings(venueId);
+                break;
+        }
+    });
+
+    // 查看场地详情
+    function showVenueDetails(venueId) {
+        fetch('{{ url_for("admin_venues.get_venue_details", venue_id=0) }}'.replace('0', venueId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // 实现详情显示逻辑
+                console.log(data.venue);
+            } else {
+                alert('获取详情失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('获取详情失败：' + error.message);
+        });
+    }
+
+    // 编辑场地信息
+    function editVenue(venueId) {
+        // 实现编辑功能
+    }
+
+    // 查看场地预约
+    function showBookings(venueId) {
+        // 实现预约查看功能
+    }
+});
+</script>
+{% endblock %} 
