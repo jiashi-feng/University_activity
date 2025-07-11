@@ -311,6 +311,19 @@ def create_activity():
     
     return render_template('student/create_activity.html')
 
+@app.route('/student/apply', methods=['GET'])
+@login_required
+@role_required('student')
+def student_apply():
+    """学生活动申请页面，技能选项从数据库获取"""
+    db = get_db()
+    try:
+        skills = db.execute('SELECT DISTINCT skill_name FROM student_skills').fetchall()
+        skill_options = [row['skill_name'] for row in skills]
+    finally:
+        db.close()
+    return render_template('student/activity_apply.html', skill_options=skill_options)
+
 # ==================== 教师路由 ====================
 
 @app.route('/teacher/dashboard')
