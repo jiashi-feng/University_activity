@@ -62,14 +62,8 @@
         </div>
         <div style="flex: 1;">
             <div class="main-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <input type="text" class="form-control d-inline-block me-2" style="width:180px;" placeholder="姓名">
-                        <input type="text" class="form-control d-inline-block me-2" style="width:180px;" placeholder="学号">
-                        <button class="btn btn-primary me-2">搜索</button>
-                        <button class="btn btn-warning">重置</button>
-                    </div>
-                </div>
+                <h4 class="mb-4">活动学生审核</h4>
+                
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead>
@@ -90,24 +84,50 @@
                                 <td>{{ loop.index }}</td>
                                 <td>{{ row.activity_name }}</td>
                                 <td>{{ row.student_name }}</td>
-                                <td>{{ row.activity_time }}</td>
+                                <td>{{ row.start_time }} 至 {{ row.end_time }}</td>
                                 <td>{{ row.grade }}</td>
-                                <td>{{ row.participants }}</td>
-                                <td>{{ row.teacher }}</td>
+                                <td>{{ row.max_participants }}</td>
+                                <td>{{ row.teacher_name or '未分配' }}</td>
                                 <td>
-                                    <button class="btn btn-primary btn-sm">同意</button>
-                                    <button class="btn btn-danger btn-sm">拒绝</button>
+                                    <button class="btn btn-primary btn-sm" onclick="reviewParticipation({{ row.participation_id }}, 'approve')">同意</button>
+                                    <button class="btn btn-danger btn-sm" onclick="reviewParticipation({{ row.participation_id }}, 'reject')">拒绝</button>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                <div class="text-end mt-3">
-                    <button class="btn btn-primary">保存审核结果</button>
-                </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function reviewParticipation(participationId, action) {
+            const actionText = action === 'approve' ? '同意' : '拒绝';
+            if (confirm(`确定要${actionText}这个申请吗？`)) {
+                fetch(`/student/review_participation/${participationId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=${action}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`${actionText}成功！`);
+                        location.reload();
+                    } else {
+                        alert('操作失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('操作失败，请稍后重试');
+                });
+            }
+        }
+    </script>
 </body>
 </html> 

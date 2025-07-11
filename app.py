@@ -373,13 +373,76 @@ def score_entry():
 @login_required
 @role_required('student')
 def activity_review():
-    # 示例数据，实际应从数据库查询
-    reviews = [
-        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'teacher': '张三'},
-        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'teacher': '张三'},
-        {'activity_name': '羽毛球II', 'student_name': '王海波', 'activity_time': '2025年1月1日至2025年1月2日', 'grade': '2020', 'participants': 30, 'teacher': '张三'},
-    ]
-    return render_template('student/activity_review.html', reviews=reviews)
+    db = get_db()
+    try:
+        # 从数据库查询活动学生审核数据
+        reviews = db.execute('''
+            SELECT ap.participation_id, a.activity_name, u.name as student_name, 
+                   a.start_time, a.end_time, s.grade, a.max_participants,
+                   t.name as teacher_name, ap.status, ap.applied_at
+            FROM activity_participants ap
+            JOIN activities a ON ap.activity_id = a.activity_id
+            JOIN users u ON ap.student_id = u.user_id
+            JOIN students s ON ap.student_id = s.student_id
+            LEFT JOIN users t ON a.supervisor_id = t.user_id
+            WHERE a.organizer_id = ? AND ap.status = 'applied'
+            ORDER BY ap.applied_at DESC
+        ''', (session['user_id'],)).fetchall()
+        
+        return render_template('student/activity_review.html', reviews=reviews)
+    finally:
+        db.close()
+
+@app.route('/student/review_participation/<int:participation_id>', methods=['POST'])
+@login_required
+@role_required('student')
+def review_participation(participation_id):
+    action = request.form.get('action')  # 'approve' or 'reject'
+    
+    if action not in ['approve', 'reject']:
+        return jsonify({'success': False, 'message': '无效的操作'})
+    
+    db = get_db()
+    try:
+        # 检查权限：只有活动组织者可以审核
+        participation = db.execute('''
+            SELECT ap.*, a.organizer_id 
+            FROM activity_participants ap
+            JOIN activities a ON ap.activity_id = a.activity_id
+            WHERE ap.participation_id = ?
+        ''', (participation_id,)).fetchone()
+        
+        if not participation:
+            return jsonify({'success': False, 'message': '参与记录不存在'})
+        
+        if participation['organizer_id'] != session['user_id']:
+            return jsonify({'success': False, 'message': '无权限审核此申请'})
+        
+        # 更新审核状态
+        new_status = 'approved' if action == 'approve' else 'rejected'
+        db.execute('''
+            UPDATE activity_participants 
+            SET status = ?, approved_at = CURRENT_TIMESTAMP
+            WHERE participation_id = ?
+        ''', (new_status, participation_id))
+        
+        # 如果是批准，更新活动参与人数
+        if action == 'approve':
+            db.execute('''
+                UPDATE activities 
+                SET participant_count = participant_count + 1
+                WHERE activity_id = ?
+            ''', (participation['activity_id'],))
+        
+        db.commit()
+        
+        return jsonify({'success': True, 'message': f'已{action}'})
+        
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        db.close()
 
 @app.route('/student/notification')
 @login_required
