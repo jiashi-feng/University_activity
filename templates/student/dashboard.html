@@ -93,63 +93,37 @@
         </div>
 
         <!-- 筛选区域 -->
-        <div class="filter-section">
-            <h5 class="mb-3"><i class="fas fa-filter me-2"></i>筛选条件</h5>
-            <form method="POST" action="/student/filter">
-                <div class="row">
-                    <div class="col-md-3">
-                        <select class="form-select" name="activity_type">
-                            <option value="">所有类型</option>
-                            <option value="学术">学术类</option>
-                            <option value="文艺">文艺类</option>
-                            <option value="体育">体育类</option>
-                            <option value="社会实践">社会实践</option>
-                            <option value="志愿服务">志愿服务</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" name="status">
-                            <option value="">所有状态</option>
-                            <option value="报名中">报名中</option>
-                            <option value="即将开始">即将开始</option>
-                            <option value="进行中">进行中</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <input type="date" class="form-control" name="start_date" placeholder="开始日期">
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-search me-1"></i>筛选
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
+        <!-- 已移除筛选条件界面 -->
 
         <!-- 我的活动状态 -->
         <div class="my-activities mb-4">
             <h5 class="mb-3"><i class="fas fa-user-check me-2"></i>我的活动状态</h5>
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h4 text-secondary">{{ organized_count }}</div>
+                        <small class="text-muted">已组织</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <div class="text-center">
                         <div class="h4 text-primary">3</div>
                         <small class="text-muted">已报名</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="text-center">
                         <div class="h4 text-success">1</div>
                         <small class="text-muted">进行中</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="text-center">
                         <div class="h4 text-warning">2</div>
                         <small class="text-muted">待审核</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="text-center">
                         <div class="h4 text-info">5</div>
                         <small class="text-muted">已完成</small>

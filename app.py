@@ -177,11 +177,16 @@ def student_dashboard():
             ORDER BY a.start_time DESC
         ''', (session['user_id'],)).fetchall()
         
+        # 获取已组织的活动数量
+        organized_count = db.execute('''
+            SELECT COUNT(*) FROM activities WHERE organizer_id = ?
+        ''', (session['user_id'],)).fetchone()[0]
         return render_template('student/dashboard.html', 
                              student_info=student_info,
                              student_skills=student_skills,
                              available_activities=available_activities,
-                             my_activities=my_activities)
+                             my_activities=my_activities,
+                             organized_count=organized_count)
     
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
