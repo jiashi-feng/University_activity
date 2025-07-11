@@ -23,11 +23,107 @@ def get_db_connection():
 @admin_required
 def dashboard():
     """管理员首页"""
-    admin_info = {
-        'name': session.get('username'),
-        'college': session.get('college')
-    }
-    return render_template('admin/dashboard.html', admin_info=admin_info)
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # 获取管理员信息
+        cursor.execute('''
+            SELECT u.name, u.college, u.phone, t.employee_number, t.position
+            FROM users u
+            JOIN teachers t ON u.user_id = t.teacher_id
+            WHERE u.user_id = ? AND t.is_admin = 1
+        ''', (session.get('user_id'),))
+        
+        admin_data = cursor.fetchone()
+        if not admin_data:
+            flash('未找到管理员信息', 'error')
+            return redirect(url_for('login'))
+            
+        admin_info = {
+            'name': admin_data['name'],
+            'college': admin_data['college'],
+            'employee_number': admin_data['employee_number'],
+            'position': admin_data['position']
+        }
+        
+        # 获取场地使用情况
+        now = datetime.now()
+        cursor.execute('''
+            SELECT v.*,
+                   CASE 
+                       WHEN EXISTS (
+                           SELECT 1 FROM venue_bookings vb
+                           WHERE vb.venue_id = v.venue_id
+                           AND vb.booking_status = 'approved'
+                           AND ? BETWEEN vb.start_time AND vb.end_time
+                       ) THEN '使用中'
+                       WHEN v.status = 'maintenance' THEN '维护中'
+                       WHEN v.status = 'unavailable' THEN '不可用'
+                       ELSE '空闲'
+                   END as current_status,
+                   COALESCE(
+                       (SELECT MIN(vb.end_time)
+                        FROM venue_bookings vb
+                        WHERE vb.venue_id = v.venue_id
+                        AND vb.booking_status = 'approved'
+                        AND vb.start_time > ?
+                        ), '当前可用'
+                   ) as next_available
+            FROM venues v
+            ORDER BY v.venue_name
+            LIMIT 3
+        ''', (now.isoformat(), now.isoformat()))
+        
+        venues = [dict(row) for row in cursor.fetchall()]
+        
+        # 获取待审批活动
+        cursor.execute('''
+            SELECT 
+                a.activity_id,
+                a.activity_name,
+                vb.created_at as applied_at,
+                v.venue_name,
+                u.name as organizer_name,
+                a.max_participants,
+                vb.booking_id
+            FROM activities a
+            JOIN venue_bookings vb ON a.activity_id = vb.activity_id
+            JOIN venues v ON vb.venue_id = v.venue_id
+            JOIN users u ON a.organizer_id = u.user_id
+            WHERE vb.booking_status = 'pending'
+            AND a.start_time > datetime('now')
+            ORDER BY vb.created_at DESC
+            LIMIT 2
+        ''')
+        
+        pending_activities = []
+        for row in cursor.fetchall():
+            activity = dict(row)
+            applied_at = datetime.fromisoformat(activity['applied_at'])
+            now = datetime.now()
+            diff = now - applied_at
+            
+            if diff.days > 0:
+                time_ago = f"{diff.days}天前"
+            elif diff.seconds >= 3600:
+                hours = diff.seconds // 3600
+                time_ago = f"{hours}小时前"
+            elif diff.seconds >= 60:
+                minutes = diff.seconds // 60
+                time_ago = f"{minutes}分钟前"
+            else:
+                time_ago = "刚刚"
+                
+            activity['time_ago'] = time_ago
+            pending_activities.append(activity)
+        
+        return render_template('admin/dashboard.html',
+                             admin_info=admin_info,
+                             venues=venues,
+                             pending_activities=pending_activities)
+    finally:
+        conn.close()
 
 @admin_bp.route('/seasons')
 @admin_required

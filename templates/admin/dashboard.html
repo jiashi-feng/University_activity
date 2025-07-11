@@ -68,24 +68,21 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% for venue in venues %}
                             <tr>
-                                <td>大礼堂</td>
-                                <td>500</td>
-                                <td><span class="venue-status status-occupied"></span>使用中</td>
-                                <td>今日 18:00</td>
+                                <td>{{ venue.venue_name }}</td>
+                                <td>{{ venue.capacity }}</td>
+                                <td>
+                                    <span class="venue-status 
+                                        {% if venue.current_status == '使用中' %}status-occupied
+                                        {% elif venue.current_status == '维护中' %}status-maintenance
+                                        {% else %}status-available{% endif %}">
+                                    </span>
+                                    {{ venue.current_status }}
+                                </td>
+                                <td>{{ venue.next_available }}</td>
                             </tr>
-                            <tr>
-                                <td>报告厅</td>
-                                <td>200</td>
-                                <td><span class="venue-status status-available"></span>空闲</td>
-                                <td>当前可用</td>
-                            </tr>
-                            <tr>
-                                <td>体育馆</td>
-                                <td>800</td>
-                                <td><span class="venue-status status-maintenance"></span>维护中</td>
-                                <td>2024-03-15</td>
-                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -104,22 +101,20 @@
             </div>
             <div class="card-body">
                 <div class="list-group">
+                    {% for activity in pending_activities %}
                     <a href="{{ url_for('admin.activities') }}" class="list-group-item list-group-item-action">
                         <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">校园音乐节</h6>
-                            <small class="text-muted">2小时前</small>
+                            <h6 class="mb-1">{{ activity.activity_name }}</h6>
+                            <small class="text-muted">{{ activity.time_ago }}</small>
                         </div>
-                        <p class="mb-1">申请场地：大礼堂</p>
-                        <small>申请人：张三 | 预计参与人数：200人</small>
+                        <p class="mb-1">申请场地：{{ activity.venue_name }}</p>
+                        <small>申请人：{{ activity.organizer_name }} | 预计参与人数：{{ activity.max_participants }}人</small>
                     </a>
-                    <a href="{{ url_for('admin.activities') }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">篮球联赛</h6>
-                            <small class="text-muted">5小时前</small>
-                        </div>
-                        <p class="mb-1">申请场地：体育馆</p>
-                        <small>申请人：李四 | 预计参与人数：150人</small>
-                    </a>
+                    {% else %}
+                    <div class="list-group-item">
+                        <p class="mb-0 text-center text-muted">暂无待审批活动</p>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

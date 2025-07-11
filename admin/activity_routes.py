@@ -16,16 +16,25 @@ def get_pending_activities():
     
     # 获取待审批的活动和场地申请信息
     cursor.execute('''
-        SELECT a.activity_id, a.activity_name, a.description, a.start_time, a.end_time,
-               a.required_skills, a.max_participants, a.applied_funds,
-               u.name as organizer_name, t.name as supervisor_name,
-               vb.venue_id, vb.booking_id, v.venue_name, v.capacity
+        SELECT 
+            a.activity_id, 
+            a.activity_name, 
+            a.description, 
+            a.start_time, 
+            a.end_time,
+            a.max_participants,
+            u.name as organizer_name,
+            v.venue_name,
+            vb.booking_id,
+            vb.booking_status,
+            vb.created_at as applied_at
         FROM activities a
         JOIN users u ON a.organizer_id = u.user_id
-        JOIN users t ON a.supervisor_id = t.user_id
         JOIN venue_bookings vb ON a.activity_id = vb.activity_id
         JOIN venues v ON vb.venue_id = v.venue_id
         WHERE vb.booking_status = 'pending'
+        AND a.start_time > datetime('now')
+        ORDER BY vb.created_at DESC
     ''')
     
     activities = cursor.fetchall()
@@ -33,25 +42,44 @@ def get_pending_activities():
     # 转换为JSON格式
     result = []
     for activity in activities:
+        # 转换时间格式
+        start_time = datetime.fromisoformat(activity['start_time'])
+        end_time = datetime.fromisoformat(activity['end_time'])
+        applied_at = datetime.fromisoformat(activity['applied_at'])
+        
         result.append({
             'activity_id': activity['activity_id'],
             'activity_name': activity['activity_name'],
             'description': activity['description'],
-            'start_time': activity['start_time'],
-            'end_time': activity['end_time'],
-            'required_skills': activity['required_skills'],
+            'start_time': start_time.strftime('%Y-%m-%d %H:%M'),
+            'end_time': end_time.strftime('%Y-%m-%d %H:%M'),
             'max_participants': activity['max_participants'],
-            'applied_funds': activity['applied_funds'],
             'organizer_name': activity['organizer_name'],
-            'supervisor_name': activity['supervisor_name'],
-            'venue_id': activity['venue_id'],
-            'booking_id': activity['booking_id'],
             'venue_name': activity['venue_name'],
-            'venue_capacity': activity['capacity']
+            'booking_id': activity['booking_id'],
+            'booking_status': activity['booking_status'],
+            'applied_at': applied_at.strftime('%Y-%m-%d %H:%M'),
+            'time_ago': get_time_ago(applied_at)
         })
     
     conn.close()
     return jsonify(result)
+
+def get_time_ago(dt):
+    """计算时间差的人性化表示"""
+    now = datetime.now()
+    diff = now - dt
+    
+    if diff.days > 0:
+        return f"{diff.days}天前"
+    elif diff.seconds >= 3600:
+        hours = diff.seconds // 3600
+        return f"{hours}小时前"
+    elif diff.seconds >= 60:
+        minutes = diff.seconds // 60
+        return f"{minutes}分钟前"
+    else:
+        return "刚刚"
 
 @admin_activity.route('/api/admin/approve-venue', methods=['POST'])
 def approve_venue():

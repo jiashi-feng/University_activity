@@ -62,10 +62,31 @@ def venues_page():
 def get_all_venues(conn):
     """获取所有场地信息"""
     cursor = conn.cursor()
+    now = datetime.now()
     cursor.execute('''
-        SELECT * FROM venues
-        ORDER BY venue_name
-    ''')
+        SELECT v.*,
+               CASE 
+                   WHEN EXISTS (
+                       SELECT 1 FROM venue_bookings vb
+                       WHERE vb.venue_id = v.venue_id
+                       AND vb.booking_status = 'approved'
+                       AND ? BETWEEN vb.start_time AND vb.end_time
+                   ) THEN '使用中'
+                   WHEN v.status = 'maintenance' THEN '维护中'
+                   WHEN v.status = 'unavailable' THEN '不可用'
+                   ELSE '空闲'
+               END as current_status,
+               COALESCE(
+                   (SELECT MIN(vb.end_time)
+                    FROM venue_bookings vb
+                    WHERE vb.venue_id = v.venue_id
+                    AND vb.booking_status = 'approved'
+                    AND vb.start_time > ?
+                    ), '当前可用'
+               ) as next_available
+        FROM venues v
+        ORDER BY v.venue_name
+    ''', (now.isoformat(), now.isoformat()))
     return cursor.fetchall()
 
 def get_venue_stats(conn):
