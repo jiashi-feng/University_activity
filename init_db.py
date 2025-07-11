@@ -218,22 +218,7 @@ def create_tables(cursor):
         )
     ''')
     
-    # 14. 参与者评价表
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS participant_evaluations (
-            evaluation_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            activity_id INTEGER NOT NULL,
-            participant_id INTEGER NOT NULL,
-            organizer_id INTEGER NOT NULL,
-            rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-            comment TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (activity_id) REFERENCES activities(activity_id),
-            FOREIGN KEY (participant_id) REFERENCES students(student_id),
-            FOREIGN KEY (organizer_id) REFERENCES students(student_id)
-        )
-    ''')
-    
+
     # 15. 组织者评价表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS organizer_evaluations (
@@ -486,18 +471,6 @@ def insert_sample_data(cursor):
         VALUES (?, ?, ?, ?, ?)
     ''', reward_distributions_data)
     
-    # 插入参与者评价信息
-    participant_evaluations_data = [
-        (1, 1, 1, 4, '积极参与，完成质量高'),
-        (1, 2, 1, 5, '表现优秀，团队合作能力强'),
-        (2, 4, 2, 5, '专业水平高，表演出色'),
-        (3, 5, 3, 3, '参与度一般，需要加强'),
-    ]
-    
-    cursor.executemany('''
-        INSERT INTO participant_evaluations (activity_id, participant_id, organizer_id, rating, comment) 
-        VALUES (?, ?, ?, ?, ?)
-    ''', participant_evaluations_data)
     
     # 插入组织者评价信息
     organizer_evaluations_data = [

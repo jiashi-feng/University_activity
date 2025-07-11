@@ -8,7 +8,7 @@ from admin.venues import venues_bp
 from admin.activity_routes import admin_activity
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key'  # 添加密钥用于session
+app.secret_key = 'tP6Xe8mZ3vQJyKfBwN2Lc7sD1gH5Yr9VnM4kT0xGpU'  # 添加密钥用于session
 
 # 注册蓝图
 app.register_blueprint(admin_bp)  # admin_bp已经有/admin前缀
@@ -113,7 +113,7 @@ def login():
                     
                     if teacher and teacher['is_admin']:
                         session['is_admin'] = True
-                        return redirect(url_for('admin.dashboard'))  # 修改这里，使用蓝图的URL
+                        return redirect(url_for('admin.dashboard'))  # 使用蓝图的URL
                     else:
                         session['is_admin'] = False
                         return redirect(url_for('teacher_dashboard'))
@@ -460,27 +460,18 @@ def admin_dashboard():
             ORDER BY a.created_at DESC
         ''').fetchall()
         
-        # 获取所有活动统计信息
-        activity_stats = db.execute('''
-            SELECT 
-                COUNT(*) as total_activities,
-                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_activities,
-                SUM(CASE WHEN status = 'pending_review' THEN 1 ELSE 0 END) as pending_activities,
-                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_activities
-            FROM activities
-        ''').fetchone()
-        
+
         return render_template('admin/dashboard.html',
                              admin_info=admin_info,
                              pending_activities=pending_activities,
-                             activity_stats=activity_stats)
+                             )
     
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
         return render_template('admin/dashboard.html',
                              admin_info=None,
                              pending_activities=[],
-                             activity_stats=None)
+                             )
     finally:
         db.close()
 
