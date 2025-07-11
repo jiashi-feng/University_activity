@@ -385,20 +385,20 @@ def activity_review():
 @login_required
 @role_required('student')
 def notification():
-    # 示例数据，实际应从数据库查询
-    notifications = [
-        {'content': '你的xxx活动申请已通过', 'time': '2020-3-2', 'sender': '负责老师'},
-        {'content': '你的xxx活动资金已分配', 'time': '2020-3-2', 'sender': '负责老师'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-        {'content': '你的xxx活动审核已结束', 'time': '2020-3-2', 'sender': '管理员'},
-    ]
-    return render_template('student/notification.html', notifications=notifications)
+    db = get_db()
+    try:
+        # 从数据库查询通知数据
+        notifications = db.execute('''
+            SELECT n.*, u.name as sender_name
+            FROM notifications n
+            LEFT JOIN users u ON n.sender_id = u.user_id
+            WHERE n.recipient_id = ?
+            ORDER BY n.created_at DESC
+        ''', (session['user_id'],)).fetchall()
+        
+        return render_template('student/notification.html', notifications=notifications)
+    finally:
+        db.close()
 
 @app.route('/student/change_organizer', methods=['GET', 'POST'])
 @login_required

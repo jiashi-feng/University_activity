@@ -64,34 +64,25 @@
         </div>
         <div style="flex: 1;">
             <div class="main-content">
-                <ul class="nav nav-tabs mb-3">
-                    <li class="nav-item"><a class="nav-link active" href="#">全部</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">未读</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">已读</a></li>
-                </ul>
-                <div class="d-flex justify-content-end mb-3">
-                    <button class="btn btn-light me-2">标记已读</button>
-                    <button class="btn btn-light me-2">删除</button>
-                    <button class="btn btn-light me-2">全部已读</button>
-                    <button class="btn btn-light">全部删除</button>
-                </div>
+                <h4 class="mb-4">通知</h4>
+                
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead>
                             <tr>
-                                <th style="width:40px;"><input type="checkbox"></th>
-                                <th>标题内容</th>
+                                <th>标题</th>
+                                <th>内容</th>
                                 <th>时间</th>
-                                <th>发出者</th>
+                                <th>发送者</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for row in notifications %}
+                            {% for notification in notifications %}
                             <tr>
-                                <td><input type="checkbox"></td>
-                                <td>{{ row.content }}</td>
-                                <td>{{ row.time }}</td>
-                                <td>{{ row.sender }}</td>
+                                <td>{{ notification.title }}</td>
+                                <td>{{ notification.content }}</td>
+                                <td>{{ notification.created_at }}</td>
+                                <td>{{ notification.sender_name }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
