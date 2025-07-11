@@ -272,6 +272,39 @@ def student_organizer():
     finally:
         db.close()
 
+@app.route('/student/organizer_activities')
+@login_required
+@role_required('student')
+def organizer_activities():
+    """我组织的活动页面"""
+    db = get_db()
+    try:
+        activities = db.execute('''
+            SELECT * FROM activities
+            WHERE organizer_id = ?
+            ORDER BY start_time DESC
+        ''', (session['user_id'],)).fetchall()
+        now = datetime.now()
+        ongoing = []
+        ended = []
+        for act in activities:
+            end_time = act['end_time']
+            # 兼容字符串和datetime类型
+            if isinstance(end_time, str):
+                try:
+                    end_time_dt = datetime.fromisoformat(end_time)
+                except Exception:
+                    end_time_dt = now
+            else:
+                end_time_dt = end_time
+            if end_time_dt > now:
+                ongoing.append(act)
+            else:
+                ended.append(act)
+    finally:
+        db.close()
+    return render_template('student/organizer_activities.html', ongoing=ongoing, ended=ended)
+
 @app.route('/student/create_activity', methods=['GET', 'POST'])
 @login_required
 @role_required('student')

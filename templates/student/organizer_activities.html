@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我组织的活动 - 高校活动管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        .status-badge {
+            font-size: 0.9rem;
+            border-radius: 12px;
+            padding: 0.2em 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div style="display: flex; min-height: 100vh;">
+        <!-- 左侧导航栏 -->
+        <nav style="width: 220px; background: #1a237e; color: #fff; padding: 20px 10px 0 20px; border-radius: 0 0 8px 0; font-family: '微软雅黑', Arial, sans-serif;">
+            <div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 30px;">学生活动管理</div>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 18px;"><a href="/student/dashboard" style="color: #fff; text-decoration: none; font-size: 1rem;">活动中心</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/apply" style="color: #fff; text-decoration: none; font-size: 1rem;">活动申请</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/organizer_activities" style="color: #fff; text-decoration: none; font-size: 1rem;">我组织的活动</a></li>
+                <li style="margin-bottom: 18px;"><a href="#" style="color: #fff; text-decoration: none; font-size: 1rem;">学生成绩录入</a></li>
+                <li style="margin-bottom: 18px;"><a href="#" style="color: #fff; text-decoration: none; font-size: 1rem;">活动学生审核</a></li>
+                <li style="margin-bottom: 18px;"><a href="#" style="color: #fff; text-decoration: none; font-size: 1rem;">通知</a></li>
+                <li style="margin-bottom: 18px;"><a href="#" style="color: #fff; text-decoration: none; font-size: 1rem;">更换组织者</a></li>
+            </ul>
+        </nav>
+        <!-- 主体内容区域 -->
+        <div style="flex: 1;">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+                <div class="container">
+                    <a class="navbar-brand" href="#">
+                        <i class="fas fa-graduation-cap me-2"></i>活动管理系统
+                    </a>
+                    <div class="navbar-nav ms-auto">
+                        <span class="navbar-text me-3">
+                            <i class="fas fa-user me-1"></i>欢迎，张三同学
+                        </span>
+                        <a class="nav-link" href="/logout">
+                            <i class="fas fa-sign-out-alt"></i> 退出登录
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            <div class="container mt-4">
+                <h2 class="mb-4"><i class="fas fa-users-cog me-2"></i>我组织的活动</h2>
+                {% if activities and activities|length > 0 %}
+                <div class="row">
+                    {% for act in activities %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold">{{ act.activity_name }}</span>
+                                    <span class="status-badge bg-{% if act.status=='approved' %}success{% elif act.status=='pending_review' %}warning{% elif act.status=='in_progress' %}info{% elif act.status=='completed' %}secondary{% elif act.status=='cancelled' %}danger{% else %}secondary{% endif %}">
+                                        {{ act.status|replace('approved','已批准')|replace('pending_review','待审核')|replace('in_progress','进行中')|replace('completed','已完成')|replace('cancelled','已取消')|replace('planning','策划中') }}
+                                    </span>
+                                </div>
+                                <div class="mb-2 text-muted" style="font-size:0.95em;">
+                                    <div>类型：{{ act.activity_type }}</div>
+                                    <div>时间：{{ act.start_time }} ~ {{ act.end_time }}</div>
+                                    <div>人数：{{ act.max_participants }}</div>
+                                    <div>简介：{{ act.description }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">暂无你组织的活动。</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
