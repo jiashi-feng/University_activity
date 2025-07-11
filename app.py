@@ -51,21 +51,9 @@ def role_required(role):
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_type' not in session or session['user_type'] != 'teacher':
-            flash('权限不足', 'error')
-            return redirect(url_for('login'))
-        
-        # 检查是否为管理员
-        db = get_db()
-        teacher = db.execute(
-            'SELECT is_admin FROM teachers WHERE teacher_id = ?',
-            (session['user_id'],)
-        ).fetchone()
-        db.close()
-        
-        if not teacher or not teacher['is_admin']:
+        if 'user_type' not in session or session['user_type'] != 'teacher' or not session.get('is_admin'):
             flash('需要管理员权限', 'error')
-            return redirect(url_for('teacher_dashboard'))
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -108,11 +96,22 @@ def login():
                 session['username'] = user['name']
                 session['college'] = user['college']
                 
-                # 根据用户类型重定向
-                if user['user_type'] == 'student':
+                # 如果是教师，检查是否为管理员
+                if user['user_type'] == 'teacher':
+                    teacher = db.execute(
+                        'SELECT is_admin FROM teachers WHERE teacher_id = ?',
+                        (user['user_id'],)
+                    ).fetchone()
+                    
+                    if teacher and teacher['is_admin']:
+                        session['is_admin'] = True
+                        return redirect(url_for('admin_dashboard'))
+                    else:
+                        session['is_admin'] = False
+                        return redirect(url_for('teacher_dashboard'))
+                elif user['user_type'] == 'student':
+                    session['is_admin'] = False
                     return redirect(url_for('student_dashboard'))
-                elif user['user_type'] == 'teacher':
-                    return redirect(url_for('teacher_dashboard'))
             else:
                 flash('用户名或密码错误', 'error')
         
@@ -427,6 +426,55 @@ def teacher_funding():
         db.close()
 
 # ==================== 管理员路由 ====================
+
+@app.route('/admin/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    """管理员主页"""
+    db = get_db()
+    try:
+        # 获取管理员信息
+        admin_info = db.execute('''
+            SELECT t.*, u.name, u.college 
+            FROM teachers t
+            JOIN users u ON t.teacher_id = u.user_id
+            WHERE t.teacher_id = ? AND t.is_admin = 1
+        ''', (session['user_id'],)).fetchone()
+        
+        # 获取所有待审核的活动
+        pending_activities = db.execute('''
+            SELECT a.*, u.name as organizer_name, t.name as supervisor_name
+            FROM activities a
+            JOIN users u ON a.organizer_id = u.user_id
+            LEFT JOIN users t ON a.supervisor_id = t.user_id
+            WHERE a.status = 'pending_review'
+            ORDER BY a.created_at DESC
+        ''').fetchall()
+        
+        # 获取所有活动统计信息
+        activity_stats = db.execute('''
+            SELECT 
+                COUNT(*) as total_activities,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_activities,
+                SUM(CASE WHEN status = 'pending_review' THEN 1 ELSE 0 END) as pending_activities,
+                SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_activities
+            FROM activities
+        ''').fetchone()
+        
+        return render_template('admin/dashboard.html',
+                             admin_info=admin_info,
+                             pending_activities=pending_activities,
+                             activity_stats=activity_stats)
+    
+    except Exception as e:
+        flash(f'获取数据失败：{str(e)}', 'error')
+        return render_template('admin/dashboard.html',
+                             admin_info=None,
+                             pending_activities=[],
+                             activity_stats=None)
+    finally:
+        db.close()
 
 @app.route('/admin/venues')
 @login_required
