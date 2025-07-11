@@ -400,6 +400,83 @@ def notification():
     ]
     return render_template('student/notification.html', notifications=notifications)
 
+@app.route('/student/change_organizer', methods=['GET', 'POST'])
+@login_required
+@role_required('student')
+def change_organizer():
+    if request.method == 'GET':
+        db = get_db()
+        try:
+            # 获取当前学生的组织者变更申请
+            changes = db.execute('''
+                SELECT oc.*, a.activity_name, 
+                       u1.name as old_organizer, u2.name as new_organizer
+                FROM organizer_changes oc
+                JOIN activities a ON oc.activity_id = a.activity_id
+                JOIN users u1 ON oc.original_organizer_id = u1.user_id
+                JOIN users u2 ON oc.new_organizer_id = u2.user_id
+                WHERE oc.original_organizer_id = ?
+                ORDER BY oc.requested_at DESC
+            ''', (session['user_id'],)).fetchall()
+            
+            # 获取当前学生组织的活动
+            activities = db.execute('''
+                SELECT activity_id, activity_name FROM activities 
+                WHERE organizer_id = ? AND status = 'approved'
+            ''', (session['user_id'],)).fetchall()
+            
+            return render_template('student/change_organizer.html', 
+                                 changes=changes, activities=activities)
+        finally:
+            db.close()
+    
+    elif request.method == 'POST':
+        activity_id = request.form.get('activity_id')
+        new_organizer_id = request.form.get('new_organizer_id')
+        reason = request.form.get('reason')
+        
+        if not all([activity_id, new_organizer_id, reason]):
+            return jsonify({'success': False, 'message': '请填写完整信息'})
+        
+        db = get_db()
+        try:
+            # 检查新组织者是否存在
+            new_organizer = db.execute('SELECT user_id FROM users WHERE user_id = ? AND user_type = "student"', 
+                                     (new_organizer_id,)).fetchone()
+            if not new_organizer:
+                return jsonify({'success': False, 'message': '新组织者不存在'})
+            
+            # 插入变更申请
+            db.execute('''
+                INSERT INTO organizer_changes (activity_id, original_organizer_id, new_organizer_id, reason)
+                VALUES (?, ?, ?, ?)
+            ''', (activity_id, session['user_id'], new_organizer_id, reason))
+            db.commit()
+            
+            return jsonify({'success': True, 'message': '申请提交成功'})
+        except Exception as e:
+            db.rollback()
+            return jsonify({'success': False, 'message': str(e)})
+        finally:
+            db.close()
+
+@app.route('/student/cancel_change_request/<int:request_id>', methods=['POST'])
+@login_required
+@role_required('student')
+def cancel_change_request(request_id):
+    db = get_db()
+    try:
+        # 删除申请
+        db.execute('DELETE FROM organizer_changes WHERE change_id = ? AND original_organizer_id = ?', 
+                  (request_id, session['user_id']))
+        db.commit()
+        return jsonify({'success': True, 'message': '申请已取消'})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        db.close()
+
 # ==================== 教师路由 ====================
 
 @app.route('/teacher/dashboard')
