@@ -95,8 +95,8 @@
             <th>活动名称</th>
             <th>组织者</th>
             <th>学院</th>
+            <th>活动描述</th>
             <th>分配金额</th>
-            <th>操作</th>
           </tr>
         </thead>
         <tbody>
@@ -105,6 +105,7 @@
             <td>{{ a.activity_name }}</td>
             <td>{{ a.organizer }}</td>
             <td>{{ a.college }}</td>
+            <td>{{ a.description }}</td>
             <td>
               <!-- 资金分配表单，每行一个活动 -->
               <form method="post" action="/teacher/allocate-funds" class="d-flex align-items-center mb-0 allocate-form">
@@ -114,7 +115,6 @@
                 <button type="submit" class="btn btn-sm btn-primary">分配并提交场地申请</button>
               </form>
             </td>
-            <td></td>
           </tr>
           {% endfor %}
         </tbody>
