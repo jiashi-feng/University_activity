@@ -42,20 +42,10 @@ def stats():
     ''').fetchall()
     # 查询学生积分排名
     ranking = db.execute('''
-        SELECT s.student_id, u.name, 
-               s.score as score,
-               COUNT(DISTINCT ap.activity_id) as activity_count,
-               COUNT(DISTINCT CASE WHEN ap.status = 'completed' THEN ap.activity_id END) as completed_count,
-               CASE 
-                   WHEN COUNT(DISTINCT ap.activity_id) > 0 
-                   THEN CAST(COUNT(DISTINCT CASE WHEN ap.status = 'completed' THEN ap.activity_id END) AS FLOAT) / COUNT(DISTINCT ap.activity_id)
-                   ELSE 0 
-               END as activity_completion_rate
+        SELECT s.student_id, u.name, u.college, s.score as score
         FROM students s
         JOIN users u ON s.student_id = u.user_id
-        LEFT JOIN activity_participants ap ON s.student_id = ap.student_id
-        GROUP BY s.student_id, u.name, s.score
-        ORDER BY score DESC, activity_completion_rate DESC
+        ORDER BY score DESC
         LIMIT 20
     ''').fetchall()
     db.close()

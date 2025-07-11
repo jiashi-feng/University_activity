@@ -365,11 +365,11 @@ def insert_sample_data(cursor):
         (9, 1, 17, '创新创业大赛', '全校创新创业大赛', datetime.now() + timedelta(days=6), datetime.now() + timedelta(days=9), '创新,创业', 25, 60, 'pending_review', 7000.0, 0.0, 0.0, 'indoor', 0),
         (10, 2, 18, '外语配音大赛', '外国语学院配音大赛', datetime.now() + timedelta(days=8), datetime.now() + timedelta(days=9), '配音', 8, 25, 'approved', 1800.0, 1500.0, 300.0, 'indoor', 0),
         # 真实风格：申请中且未分配资金
-        (11, 3, 14, '校园科技节', '展示学生科技创新成果的活动', datetime.now() + timedelta(days=10), datetime.now() + timedelta(days=12), '科技,创新', 0, 80, 'approved', 5000.0, 0.0, 0.0, 'indoor', 0),
-        (12, 4, 11, '志愿服务活动', '社区志愿服务与公益宣传', datetime.now() + timedelta(days=15), datetime.now() + timedelta(days=16), '志愿,公益', 0, 60, 'approved', 2000.0, 0.0, 0.0, 'outdoor', 0),
+        (1, 3, 14, '校园科技节', '展示学生科技创新成果的活动', datetime.now() + timedelta(days=10), datetime.now() + timedelta(days=12), '科技,创新', 0, 80, 'approved', 5000.0, 0.0, 0.0, 'indoor', 0),
+        (2, 4, 11, '志愿服务活动', '社区志愿服务与公益宣传', datetime.now() + timedelta(days=15), datetime.now() + timedelta(days=16), '志愿,公益', 0, 60, 'approved', 2000.0, 0.0, 0.0, 'outdoor', 0),
         # 真实风格：申请中且已分配资金
-        (13, 5, 12, '大学生创新创业讲座', '创业经验分享与项目路演', datetime.now() + timedelta(days=18), datetime.now() + timedelta(days=19), '创业,讲座', 0, 100, 'approved', 3000.0, 1500.0, 1500.0, 'indoor', 0),
-        (14, 6, 13, '绿色校园环保行动', '环保知识宣传与实践', datetime.now() + timedelta(days=20), datetime.now() + timedelta(days=21), '环保,宣传', 0, 120, 'approved', 4000.0, 2000.0, 2000.0, 'outdoor', 0),
+        (3, 5, 12, '大学生创新创业讲座', '创业经验分享与项目路演', datetime.now() + timedelta(days=18), datetime.now() + timedelta(days=19), '创业,讲座', 0, 100, 'approved', 3000.0, 1500.0, 1500.0, 'indoor', 0),
+        (4, 6, 13, '绿色校园环保行动', '环保知识宣传与实践', datetime.now() + timedelta(days=20), datetime.now() + timedelta(days=21), '环保,宣传', 0, 120, 'approved', 4000.0, 2000.0, 2000.0, 'outdoor', 0),
     ]
     cursor.executemany('''
         INSERT INTO activities (organizer_id, supervisor_id, admin_id, activity_name, description, start_time, end_time, required_skills, participant_count, max_participants, status, applied_funds, allocated_funds, remaining_funds, activity_type, total_score) 

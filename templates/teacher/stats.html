@@ -99,8 +99,8 @@
             <th>名次</th>
             <th>ID</th>
             <th>姓名</th>
+            <th>学院</th>
             <th>积分</th>
-            <th>活动完成率</th>
           </tr>
         </thead>
         <tbody>
@@ -109,8 +109,8 @@
             <td>{{ loop.index }}</td>
             <td>{{ student.student_id }}</td>
             <td>{{ student.name }}</td>
+            <td>{{ student.college }}</td>
             <td>{{ student.score }}</td>
-            <td>{{ '%.2f%%' % (student.activity_completion_rate * 100) }}</td>
           </tr>
           {% endfor %}
         </tbody>
