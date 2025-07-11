@@ -93,12 +93,10 @@ def login():
                         return redirect(url_for('admin.dashboard'))  # 使用蓝图的URL
                     else:
                         session['is_admin'] = False
-                        return redirect(url_for('teacher_dashboard'))
+                        return redirect(url_for('teacher_dashboard.dashboard'))
                 elif user['user_type'] == 'student':
                     session['is_admin'] = False
                     return redirect(url_for('student_dashboard'))
-                elif user['user_type'] == 'teacher':
-                    return redirect(url_for('teacher_dashboard.dashboard'))
             else:
                 flash('用户名或密码错误', 'error')
         
@@ -507,4 +505,4 @@ if __name__ == '__main__':
     init_db()
     
     # 启动Flask应用
-    app.run(debug=True, host='0.0.0.0', port=4000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
