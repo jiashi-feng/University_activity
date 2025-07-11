@@ -425,8 +425,25 @@ def change_organizer():
                 WHERE organizer_id = ? AND status = 'approved'
             ''', (session['user_id'],)).fetchall()
             
+            # 获取已有待审核变更申请的活动ID
+            pending_activities = db.execute('''
+                SELECT activity_id FROM organizer_changes 
+                WHERE original_organizer_id = ? AND change_status = 'pending'
+            ''', (session['user_id'],)).fetchall()
+            pending_activity_ids = [row['activity_id'] for row in pending_activities]
+            
+            # 获取所有学生信息（用于选择新组织者）
+            students = db.execute('''
+                SELECT s.student_id, s.student_number, u.name, s.major, s.class_name
+                FROM students s
+                JOIN users u ON s.student_id = u.user_id
+                WHERE u.user_type = 'student'
+                ORDER BY s.student_number
+            ''').fetchall()
+            
             return render_template('student/change_organizer.html', 
-                                 changes=changes, activities=activities)
+                                 changes=changes, activities=activities, 
+                                 students=students, pending_activity_ids=pending_activity_ids)
         finally:
             db.close()
     
@@ -445,6 +462,15 @@ def change_organizer():
                                      (new_organizer_id,)).fetchone()
             if not new_organizer:
                 return jsonify({'success': False, 'message': '新组织者不存在'})
+            
+            # 检查该活动是否已有待审核的变更申请
+            existing_change = db.execute('''
+                SELECT change_id FROM organizer_changes 
+                WHERE activity_id = ? AND original_organizer_id = ? AND change_status = 'pending'
+            ''', (activity_id, session['user_id'])).fetchone()
+            
+            if existing_change:
+                return jsonify({'success': False, 'message': '该活动已有待审核的变更申请，请等待审核完成或取消现有申请'})
             
             # 插入变更申请
             db.execute('''
