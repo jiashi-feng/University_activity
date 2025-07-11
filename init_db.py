@@ -300,7 +300,7 @@ def insert_sample_data(cursor):
         ('teacher', '陈老师', '计算机学院', 'teacher123', '13900139001'),
         ('teacher', '刘老师', '电子工程学院', 'teacher123', '13900139002'),
         ('teacher', '杨老师', '艺术学院', 'teacher123', '13900139003'),
-        ('teacher', '管理员', '学生处', 'admin123', '13900139004'),
+        ('teacher', '李晓峰', '学生处', 'admin123', '13900139004'),
     ]
     
     cursor.executemany('''

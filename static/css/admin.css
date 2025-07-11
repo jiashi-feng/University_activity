@@ -1,0 +1,65 @@
+/* 基础样式 */
+body {
+    background-color: #f8f9fa;
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    min-height: 100vh;
+}
+
+/* 顶部导航栏样式 */
+.top-navbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 60px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1030;
+}
+
+/* 左侧导航栏样式 */
+.side-navbar {
+    width: 250px;
+    background-color: #1a237e;
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    left: 0;
+    padding-top: 20px;
+    overflow-y: auto;
+    z-index: 1020;
+}
+
+.side-navbar .nav-link {
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 0;
+    transition: all 0.3s;
+}
+
+.side-navbar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.side-navbar .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid #fff;
+}
+
+/* 主内容区域样式 */
+.main-content {
+    margin-left: 250px;
+    margin-top: 60px;
+    padding: 20px;
+}
+
+/* 卡片样式 */
+.card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+} 
