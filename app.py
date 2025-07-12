@@ -26,22 +26,6 @@ app.register_blueprint(admin_activity, url_prefix='/admin')
 # 数据库文件路径
 DATABASE = 'University_activit.db'
 
-# 数据库连接封装
-
-# 装饰器：登录验证
-
-# 装饰器：角色验证
-
-# 装饰器：管理员验证
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_type' not in session or session['user_type'] != 'teacher' or not session.get('is_admin'):
-            flash('需要管理员权限', 'error')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
 # 首页路由
 @app.route('/')
 def index():
@@ -51,7 +35,11 @@ def index():
         if user_type == 'student':
             return redirect(url_for('student_dashboard'))
         elif user_type == 'teacher':
-            return redirect(url_for('teacher_dashboard.dashboard'))
+            # 检查是否为管理员
+            if session.get('is_admin'):
+                return redirect(url_for('admin.dashboard'))
+            else:
+                return redirect(url_for('teacher_dashboard.dashboard'))
     return redirect(url_for('login'))
 
 # 登录路由

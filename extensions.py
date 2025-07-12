@@ -42,14 +42,8 @@ def admin_required(f):
         if 'user_type' not in session or session['user_type'] != 'teacher':
             flash('权限不足', 'error')
             return redirect(url_for('login'))
-        db = get_db()
-        teacher = db.execute(
-            'SELECT is_admin FROM teachers WHERE teacher_id = ?',
-            (session['user_id'],)
-        ).fetchone()
-        db.close()
-        if not teacher or not teacher['is_admin']:
+        if not session.get('is_admin'):
             flash('需要管理员权限', 'error')
-            return redirect(url_for('teacher_dashboard'))
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function 
