@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动请假 - 学生活动管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar .nav-link.active {
+            background: #fff;
+            color: #1a237e !important;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .sidebar .nav-link {
+            color: #fff !important;
+            margin-bottom: 8px;
+        }
+        .sidebar .nav-link:hover {
+            background: #3949ab;
+            color: #fff !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="padding-left:0;">
+        <div class="row">
+            <!-- 左侧导航栏 -->
+            <nav class="col-md-2 d-none d-md-block sidebar p-0" style="background: #1a237e; min-height: 100vh; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; border-radius: 12px 0 0 12px; box-shadow: 0 0 0 0;">
+                <div class="d-flex flex-column align-items-start h-100">
+                    <div class="sidebar-title d-flex justify-content-center align-items-center flex-column" style="height: 120px; border-bottom: 1px solid #3949ab; width: 100%;">
+                        <a href="/student/dashboard" class="text-decoration-none w-100 d-flex justify-content-center align-items-center">
+                            <span class="fs-2 fw-bold text-white text-center" style="width: 100%;">学生活动管理</span>
+                        </a>
+                    </div>
+                    <ul class="nav flex-column w-100 mt-5 px-2">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/finished_activity' %}active{% endif %}" href="/student/finished_activity">已结束活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_view' %}active{% endif %}" href="/student/profile_view">个人信息查看</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_edit' %}active{% endif %}" href="/student/profile_edit">个人信息修改</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/schedule' %}active{% endif %}" href="/student/schedule">个人课表</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/leave' %}active{% endif %}" href="/student/leave">活动请假</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/message' %}active{% endif %}" href="/student/message">消息</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <!-- 主内容区 -->
+            <main class="col-md-10 offset-md-2 ms-sm-auto px-md-4" style="margin-left: 16.6667%;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2 class="fw-bold mb-4 mt-5">活动请假</h2>
+                        <form method="post" enctype="multipart/form-data" class="mb-5">
+                            {% if msg %}
+                            <div class="alert alert-info">{{ msg }}</div>
+                            {% endif %}
+                            <div class="mb-4 row align-items-center">
+                                <label class="col-sm-2 col-form-label fs-5 fw-bold">选择活动：</label>
+                                <div class="col-sm-4">
+                                    <select class="form-select" name="activity_id" id="activity-select" required>
+                                        <option value="">请选择</option>
+                                        {% for act in activities %}
+                                        <option value="{{ act.activity_id }}">{{ act.activity_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-4 row">
+                                <label class="col-sm-2 col-form-label fs-5 fw-bold">请假原因：</label>
+                                <div class="col-sm-10">
+                                    <textarea class="form-control" name="reason" rows="8" placeholder="请输入" required></textarea>
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="col-form-label fs-5 fw-bold">上传假条：</label>
+                                <div class="row mb-2 align-items-center">
+                                    <label class="col-sm-2 col-form-label">申请批准老师：</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-select" name="teacher_id" id="teacher-select" required>
+                                            <option value="">请选择</option>
+                                            {% for act in activities %}
+                                                {% if act.supervisor_id and act.supervisor_name %}
+                                                <option value="{{ act.supervisor_id }}">{{ act.supervisor_name }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row align-items-center">
+                                    <label class="col-sm-2 col-form-label">请假时间：</label>
+                                    <div class="col-sm-4">
+                                        <input type="date" class="form-control" name="leave_time" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-5">
+                                <button type="submit" class="btn btn-primary px-5 py-2 fs-5">提交申请</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html> 
