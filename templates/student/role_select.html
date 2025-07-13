@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}选择角色{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-center">请选择您的角色</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-person-workspace" style="font-size: 3rem;"></i>
+                                    <h4 class="mt-3">活动组织者</h4>
+                                    <p>创建和管理活动，审核参与者</p>
+                                    <a href="{{ url_for('student_organizer') }}" class="btn btn-primary">进入组织者界面</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-people" style="font-size: 3rem;"></i>
+                                    <h4 class="mt-3">活动参与者</h4>
+                                    <p>浏览和参与活动，提交进度</p>
+                                    <a href="{{ url_for('student_dashboard') }}" class="btn btn-primary">进入参与者界面</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
