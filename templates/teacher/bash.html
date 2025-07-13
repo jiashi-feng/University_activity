@@ -1,0 +1,64 @@
+<!-- 教师侧边导航栏样式 -->
+<style>
+.teacher-allnav {
+    width: 240px;
+    height: 100vh;
+    background: #1C3FAA;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: fixed;
+    top: 55px;
+    left: 0;
+    z-index: 1000;
+}
+.teacher-allnav .nav {
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    width: 100%;
+}
+.teacher-allnav .nav-link {
+    display: block;
+    padding: 24px 0;
+    text-align: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+    border: none;
+    background: none;
+}
+.teacher-allnav .nav-link.active,
+.teacher-allnav .nav-link:focus,
+.teacher-allnav .nav-link:hover {
+    background: #fff;
+    color: #1C3FAA;
+}
+</style>
+<!-- 教师侧边导航栏结构 -->
+<div class="teacher-allnav">
+    <nav>
+        <ul class="nav">
+            <li><a href="/teacher/dashboard" class="nav-link" id="nav-activity">活动管理</a></li>
+            <li><a href="/teacher/evaluation" class="nav-link" id="nav-evaluation">活动评分评价</a></li>
+            <li><a href="/teacher/stats" class="nav-link" id="nav-stats">数据统计</a></li>
+            <li><a href="/teacher/account" class="nav-link" id="nav-account">资金管理</a></li>
+            <li><a href="/teacher/personcenter" class="nav-link" id="nav-personcenter">个人中心</a></li>
+        </ul>
+    </nav>
+</div>
+<!-- JS高亮当前选中项，点击导航项时高亮 -->
+<script>
+document.querySelectorAll('.teacher-allnav .nav-link').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+        document.querySelectorAll('.teacher-allnav .nav-link').forEach(function(l) {
+            l.classList.remove('active');
+        });
+        this.classList.add('active');
+    });
+});
+</script>
