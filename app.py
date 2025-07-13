@@ -151,8 +151,8 @@ def student_dashboard():
             JOIN users u ON a.organizer_id = u.user_id
             LEFT JOIN users t ON a.supervisor_id = t.user_id
             WHERE a.status = 'approved' 
-              AND a.start_time > datetime('now')
-              AND a.participant_count < a.max_participants
+            AND a.start_time > datetime('now')
+            AND a.participant_count < a.max_participants
         '''
         params = []
         if activity_type:
@@ -184,7 +184,7 @@ def student_dashboard():
         organized_count = db.execute('''
             SELECT COUNT(*) FROM activities WHERE organizer_id = ?
         ''', (session['user_id'],)).fetchone()[0]
-
+        
         return render_template('student/dashboard.html', 
                              student_info=student_info,
                              student_skills=student_skills,
@@ -387,9 +387,9 @@ def create_activity():
 @role_required('student')
 def student_apply():
     """学生活动申请页面"""
-    if request.method == 'POST':
-        db = get_db()
-        try:
+    db = get_db()
+    try:
+        if request.method == 'POST':
             # 获取表单数据
             activity_name = request.form.get('activity_name')
             supervisor_name = request.form.get('supervisor')
@@ -397,7 +397,7 @@ def student_apply():
             skills_list = request.form.getlist('skills')
             activity_start_time = request.form.get('activity_start_time')
             activity_end_time = request.form.get('activity_end_time')
-            activity_participants = int(request.form.get('activity_participants', 0))
+            activity_participants = request.form.get('activity_participants', '0')
             activity_desc = request.form.get('activity_desc')
             
             # 校验必填
@@ -409,73 +409,83 @@ def student_apply():
             # 校验技能多选
             skills = ','.join(skills_list)
             
-            # 校验时间
-            start_time = datetime.fromisoformat(activity_start_time.replace('T', ' '))
-            end_time = datetime.fromisoformat(activity_end_time.replace('T', ' '))
-            if start_time >= end_time:
-                flash('结束时间必须晚于开始时间', 'error')
-                return redirect(url_for('student_apply'))
-            if start_time.date() < datetime.now().date():
-                flash('开始时间不能早于今天', 'error')
-                return redirect(url_for('student_apply'))
-            
-            # 校验未完结活动数
-            unfinished_count = db.execute('''
-                SELECT COUNT(*) FROM activities 
-                WHERE organizer_id = ? AND status NOT IN ('completed', 'cancelled') AND end_time > datetime('now')
-            ''', (session['user_id'],)).fetchone()[0]
-            if unfinished_count >= 3:
-                flash('你有超过3个未结束的活动，无法继续申请', 'error')
-                return redirect(url_for('student_apply'))
-            
-            # 查找指导教师
-            supervisor = db.execute('''
-                SELECT user_id FROM users 
-                WHERE name = ? AND user_type = 'teacher'
-            ''', (supervisor_name,)).fetchone()
-            if not supervisor:
-                flash('指导教师不存在，请检查姓名是否正确', 'error')
-                return redirect(url_for('student_apply'))
-            
-            # 活动类型映射
-            db_activity_type = 'indoor' if activity_type in ['学术', '文艺'] else 'outdoor'
-            
-            # 插入活动
-            db.execute('''
-                INSERT INTO activities (
-                    organizer_id, supervisor_id, activity_name, description, 
-                    start_time, end_time, required_skills, max_participants, 
-                    activity_type, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')
-            ''', (session['user_id'], supervisor['user_id'], activity_name, activity_desc,
-                  start_time.strftime('%Y-%m-%d %H:%M:%S'), end_time.strftime('%Y-%m-%d %H:%M:%S'),
-                  skills, activity_participants, db_activity_type))
-            db.commit()
-            flash('活动申请提交成功，等待审核！', 'success')
-            return redirect(url_for('organizer_activities'))
-        except ValueError as e:
-            flash(f'数据格式错误：{str(e)}', 'error')
-        except Exception as e:
-            db.rollback()
-            flash(f'申请提交失败：{str(e)}', 'error')
-        finally:
-            db.close()
-        return redirect(url_for('student_apply'))
-    db = get_db()
-    try:
+            try:
+                # 校验时间
+                if activity_start_time and activity_end_time:
+                    start_time = datetime.fromisoformat(activity_start_time.replace('T', ' '))
+                    end_time = datetime.fromisoformat(activity_end_time.replace('T', ' '))
+                    if start_time >= end_time:
+                        flash('结束时间必须晚于开始时间', 'error')
+                        return redirect(url_for('student_apply'))
+                    if start_time.date() < datetime.now().date():
+                        flash('开始时间不能早于今天', 'error')
+                        return redirect(url_for('student_apply'))
+                else:
+                    flash('请填写开始和结束时间', 'error')
+                    return redirect(url_for('student_apply'))
+
+                # 转换参与者数量
+                try:
+                    activity_participants = int(activity_participants)
+                except ValueError:
+                    flash('参与者数量必须为数字', 'error')
+                    return redirect(url_for('student_apply'))
+                
+                # 校验未完结活动数
+                unfinished_count = db.execute('''
+                    SELECT COUNT(*) FROM activities 
+                    WHERE organizer_id = ? AND status NOT IN ('completed', 'cancelled') AND end_time > datetime('now')
+                ''', (session['user_id'],)).fetchone()[0]
+                if unfinished_count >= 3:
+                    flash('你有超过3个未结束的活动，无法继续申请', 'error')
+                    return redirect(url_for('student_apply'))
+                
+                # 查找指导教师
+                supervisor = db.execute('''
+                    SELECT user_id FROM users 
+                    WHERE name = ? AND user_type = 'teacher'
+                ''', (supervisor_name,)).fetchone()
+                if not supervisor:
+                    flash('指导教师不存在，请检查姓名是否正确', 'error')
+                    return redirect(url_for('student_apply'))
+                
+                # 活动类型映射
+                db_activity_type = 'indoor' if activity_type in ['学术', '文艺'] else 'outdoor'
+                
+                # 插入活动
+                db.execute('''
+                    INSERT INTO activities (
+                        organizer_id, supervisor_id, activity_name, description, 
+                        start_time, end_time, required_skills, max_participants, 
+                        activity_type, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_review')
+                ''', (session['user_id'], supervisor['user_id'], activity_name, activity_desc,
+                      start_time.strftime('%Y-%m-%d %H:%M:%S'), end_time.strftime('%Y-%m-%d %H:%M:%S'),
+                      skills, activity_participants, db_activity_type))
+                db.commit()
+                flash('活动申请提交成功，等待审核！', 'success')
+                return redirect(url_for('organizer_activities'))
+            except ValueError as e:
+                flash(f'数据格式错误：{str(e)}', 'error')
+            except Exception as e:
+                db.rollback()
+                flash(f'申请提交失败：{str(e)}', 'error')
+            return redirect(url_for('student_apply'))
+
+        # GET请求处理
         skills = db.execute('SELECT DISTINCT skill_name FROM student_skills').fetchall()
         skill_options = [row['skill_name'] for row in skills]
         teachers = db.execute('''
             SELECT name FROM users 
             WHERE user_type = 'teacher' 
             ORDER BY name
-        ''').fetchall()
+            ''').fetchall()
         teacher_options = [row['name'] for row in teachers]
+        return render_template('student/activity_apply.html', 
+                             skill_options=skill_options,
+                             teacher_options=teacher_options)
     finally:
         db.close()
-    return render_template('student/activity_apply.html', 
-                         skill_options=skill_options,
-                         teacher_options=teacher_options)
 
 @app.route('/student/score_entry', methods=['GET', 'POST'])
 @login_required
@@ -499,20 +509,20 @@ def score_entry():
                 continue
             # 检查是否已有评价，存在则更新，否则插入
             existing = db.execute('''
-                SELECT evaluation_id FROM participant_evaluations
-                WHERE activity_id = ? AND participant_id = ? AND organizer_id = ?
-            ''', (activity_id, student_id, session['user_id'])).fetchone()
+                SELECT evaluation_id FROM activity_evaluations
+                WHERE activity_id = ? AND participant_id = ?
+            ''', (activity_id, student_id)).fetchone()
             if existing:
                 db.execute('''
-                    UPDATE participant_evaluations
+                    UPDATE activity_evaluations
                     SET rating = ?, created_at = CURRENT_TIMESTAMP
                     WHERE evaluation_id = ?
                 ''', (score, existing['evaluation_id']))
             else:
                 db.execute('''
-                    INSERT INTO participant_evaluations (activity_id, participant_id, organizer_id, rating)
-                    VALUES (?, ?, ?, ?)
-                ''', (activity_id, student_id, session['user_id'], score))
+                    INSERT INTO activity_evaluations (activity_id, participant_id, rating)
+                    VALUES (?, ?, ?)
+                ''', (activity_id, student_id, score))
             updated += 1
         db.commit()
         flash(f'已保存{updated}条成绩', 'success')
@@ -523,16 +533,16 @@ def score_entry():
                    a.activity_name, a.start_time || ' 至 ' || a.end_time as activity_time,
                    s.grade, a.max_participants as participants,
                    ? as input_by,
-                   COALESCE(pe.rating, 0) as score
+                   COALESCE(ae.rating, 0) as score
             FROM activities a
             JOIN activity_participants ap ON a.activity_id = ap.activity_id
             JOIN students s ON ap.student_id = s.student_id
             JOIN users u ON s.student_id = u.user_id
-            LEFT JOIN participant_evaluations pe 
-                ON pe.activity_id = a.activity_id AND pe.participant_id = ap.student_id AND pe.organizer_id = ?
+            LEFT JOIN activity_evaluations ae 
+                ON ae.activity_id = a.activity_id AND ae.participant_id = ap.student_id
             WHERE a.organizer_id = ? AND ap.status = 'approved'
             ORDER BY a.start_time DESC, u.name
-        ''', (session['username'], session['user_id'], session['user_id'])).fetchall()
+        ''', (session['username'], session['user_id'])).fetchall()
         return render_template('student/score_entry.html', scores=scores)
     finally:
         db.close()
@@ -556,20 +566,20 @@ def save_score():
     db = get_db()
     try:
         existing = db.execute('''
-            SELECT evaluation_id FROM participant_evaluations
-            WHERE activity_id = ? AND participant_id = ? AND organizer_id = ?
-        ''', (activity_id, student_id, session['user_id'])).fetchone()
+            SELECT evaluation_id FROM activity_evaluations
+            WHERE activity_id = ? AND participant_id = ?
+        ''', (activity_id, student_id)).fetchone()
         if existing:
             db.execute('''
-                UPDATE participant_evaluations
+                UPDATE activity_evaluations
                 SET rating = ?, created_at = CURRENT_TIMESTAMP
                 WHERE evaluation_id = ?
             ''', (score, existing['evaluation_id']))
         else:
             db.execute('''
-                INSERT INTO participant_evaluations (activity_id, participant_id, organizer_id, rating)
-                VALUES (?, ?, ?, ?)
-            ''', (activity_id, student_id, session['user_id'], score))
+                INSERT INTO activity_evaluations (activity_id, participant_id, rating)
+                VALUES (?, ?, ?)
+            ''', (activity_id, student_id, score))
         db.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -644,7 +654,6 @@ def review_participation(participation_id):
             ''', (participation['activity_id'],))
         
         db.commit()
-        
         return jsonify({'success': True, 'message': f'已{action}'})
         
     except Exception as e:
@@ -652,7 +661,7 @@ def review_participation(participation_id):
         return jsonify({'success': False, 'message': str(e)})
     finally:
         db.close()
-
+    
 @app.route('/student/notification')
 @login_required
 @role_required('student')
@@ -676,9 +685,9 @@ def notification():
 @login_required
 @role_required('student')
 def change_organizer():
-    if request.method == 'GET':
-        db = get_db()
-        try:
+    db = get_db()
+    try:
+        if request.method == 'GET':
             # 获取当前学生的组织者变更申请
             changes = db.execute('''
                 SELECT oc.*, a.activity_name, 
@@ -716,19 +725,15 @@ def change_organizer():
             return render_template('student/change_organizer.html', 
                                  changes=changes, activities=activities, 
                                  students=students, pending_activity_ids=pending_activity_ids)
-        finally:
-            db.close()
-    
-    elif request.method == 'POST':
-        activity_id = request.form.get('activity_id')
-        new_organizer_id = request.form.get('new_organizer_id')
-        reason = request.form.get('reason')
         
-        if not all([activity_id, new_organizer_id, reason]):
-            return jsonify({'success': False, 'message': '请填写完整信息'})
-        
-        db = get_db()
-        try:
+        elif request.method == 'POST':
+            activity_id = request.form.get('activity_id')
+            new_organizer_id = request.form.get('new_organizer_id')
+            reason = request.form.get('reason')
+            
+            if not all([activity_id, new_organizer_id, reason]):
+                return jsonify({'success': False, 'message': '请填写完整信息'})
+            
             # 检查新组织者是否存在
             new_organizer = db.execute('SELECT user_id FROM users WHERE user_id = ? AND user_type = "student"', 
                                      (new_organizer_id,)).fetchone()
@@ -752,11 +757,11 @@ def change_organizer():
             db.commit()
             
             return jsonify({'success': True, 'message': '申请提交成功'})
-        except Exception as e:
-            db.rollback()
-            return jsonify({'success': False, 'message': str(e)})
-        finally:
-            db.close()
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        db.close()
 
 @app.route('/student/cancel_change_request/<int:request_id>', methods=['POST'])
 @login_required
@@ -828,9 +833,9 @@ def recommend_activities():
         if skill_names:
             placeholders = ','.join(['?'] * len(skill_names))
             recommend_activities = db.execute(f'''
-                SELECT a.*, u.name as organizer_name
-                FROM activities a
-                JOIN users u ON a.organizer_id = u.user_id
+            SELECT a.*, u.name as organizer_name
+            FROM activities a
+            JOIN users u ON a.organizer_id = u.user_id
                 WHERE a.status = 'approved'
                   AND a.start_time > datetime('now')
                   AND (
@@ -868,17 +873,41 @@ def doing_activity():
         user_id = session['user_id']
         # 处理进度填写
         if request.method == 'POST':
-            activity_id = int(request.form.get('activity_id'))
-            node = int(request.form.get('node'))
+            activity_id_str = request.form.get('activity_id')
+            node_str = request.form.get('node')
             content = request.form.get('content', '').strip()
+            
+            # 验证和转换输入
+            try:
+                activity_id = int(activity_id_str) if activity_id_str else None
+                node = int(node_str) if node_str else None
+                if activity_id is None or node is None:
+                    msg = '请提供有效的活动ID和节点编号'
+                    return render_template('student/doing_activity.html',
+                                        doing_activities=[],
+                                        activity_progress={},
+                                        total_nodes=4,
+                                        msg=msg)
+            except ValueError:
+                msg = '活动ID和节点编号必须为数字'
+                return render_template('student/doing_activity.html',
+                                    doing_activities=[],
+                                    activity_progress={},
+                                    total_nodes=4,
+                                    msg=msg)
+            
             # 检查是否已填写该节点
-            existing = db.execute('''SELECT * FROM activity_progress WHERE activity_id=? AND participant_id=? AND progress_content=?''', (activity_id, user_id, f'节点{node}')).fetchone()
+            existing = db.execute('''SELECT * FROM activity_progress WHERE activity_id=? AND participant_id=? AND progress_content=?''', 
+                                (activity_id, user_id, f'节点{node}')).fetchone()
             if existing:
                 msg = '该节点已填写过！'
             else:
-                db.execute('''INSERT INTO activity_progress (activity_id, participant_id, progress_content, completion_percentage, submitted_at) VALUES (?, ?, ?, ?, datetime('now'))''', (activity_id, user_id, f'节点{node}', node*25))
+                db.execute('''INSERT INTO activity_progress (activity_id, participant_id, progress_content, completion_percentage, submitted_at) 
+                            VALUES (?, ?, ?, ?, datetime('now'))''', 
+                         (activity_id, user_id, f'节点{node}', node*25))
                 db.commit()
                 msg = '进度已保存！'
+        
         # 查询进行中活动（已报名且未完成）
         doing_activities = db.execute('''
             SELECT a.activity_id, a.activity_name, ap.applied_at, a.total_score
@@ -886,24 +915,27 @@ def doing_activity():
             JOIN activity_participants ap ON a.activity_id = ap.activity_id
             WHERE ap.student_id = ? AND ap.status IN ('applied','in_progress') AND a.status = 'approved'
         ''', (user_id,)).fetchall()
+        
         # 查询每个活动的已完成节点数
         activity_progress = {}
         for act in doing_activities:
-            count = db.execute('''SELECT COUNT(*) FROM activity_progress WHERE activity_id=? AND participant_id=?''', (act['activity_id'], user_id)).fetchone()[0]
+            count = db.execute('''SELECT COUNT(*) FROM activity_progress WHERE activity_id=? AND participant_id=?''', 
+                             (act['activity_id'], user_id)).fetchone()[0]
             activity_progress[act['activity_id']] = count
+        
         # 总节点数（假设4）
         total_nodes = 4
         return render_template('student/doing_activity.html',
-                              doing_activities=doing_activities,
-                              activity_progress=activity_progress,
-                              total_nodes=total_nodes,
-                              msg=msg)
+                             doing_activities=doing_activities,
+                             activity_progress=activity_progress,
+                             total_nodes=total_nodes,
+                             msg=msg)
     except Exception as e:
         return render_template('student/doing_activity.html',
-                              doing_activities=[],
-                              activity_progress={},
-                              total_nodes=4,
-                              msg=f'发生错误: {str(e)}')
+                             doing_activities=[],
+                             activity_progress={},
+                             total_nodes=4,
+                             msg=f'发生错误: {str(e)}')
     finally:
         db.close()
 
@@ -1056,27 +1088,49 @@ def schedule():
         user_id = session['user_id']
         if request.method == 'POST':
             action = request.form.get('action')
-            weekday = int(request.form.get('weekday'))
+            weekday_str = request.form.get('weekday')
             start_time = request.form.get('start_time')
             end_time = request.form.get('end_time')
             course_name = request.form.get('course_name', '').strip()
+            
+            # 验证和转换weekday
+            try:
+                weekday = int(weekday_str) if weekday_str else None
+                if weekday is None or not (0 <= weekday <= 6):
+                    msg = '请提供有效的星期数（0-6）'
+                    raise ValueError(msg)
+            except ValueError as e:
+                return render_template('student/schedule.html', 
+                                     schedule_dict={}, 
+                                     msg=str(e))
+            
             if action == 'add':
                 # 检查是否已存在
-                exists = db.execute('''SELECT * FROM student_schedule WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', (user_id, weekday, start_time, end_time)).fetchone()
+                exists = db.execute('''SELECT * FROM student_schedule 
+                                     WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', 
+                                  (user_id, weekday, start_time, end_time)).fetchone()
                 if exists:
                     msg = '该时间段已有课程，可选择修改！'
                 else:
-                    db.execute('''INSERT INTO student_schedule (student_id, weekday, start_time, end_time, course_name) VALUES (?, ?, ?, ?, ?)''', (user_id, weekday, start_time, end_time, course_name))
+                    db.execute('''INSERT INTO student_schedule (student_id, weekday, start_time, end_time, course_name) 
+                                VALUES (?, ?, ?, ?, ?)''', 
+                             (user_id, weekday, start_time, end_time, course_name))
                     db.commit()
                     msg = '课程已添加！'
             elif action == 'update':
-                db.execute('''UPDATE student_schedule SET course_name=? WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', (course_name, user_id, weekday, start_time, end_time))
+                db.execute('''UPDATE student_schedule 
+                            SET course_name=? 
+                            WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', 
+                         (course_name, user_id, weekday, start_time, end_time))
                 db.commit()
                 msg = '课程已更新！'
             elif action == 'delete':
-                db.execute('''DELETE FROM student_schedule WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', (user_id, weekday, start_time, end_time))
+                db.execute('''DELETE FROM student_schedule 
+                            WHERE student_id=? AND weekday=? AND start_time=? AND end_time=?''', 
+                         (user_id, weekday, start_time, end_time))
                 db.commit()
                 msg = '课程已删除！'
+        
         # 查询当前学生所有课表
         schedule_rows = db.execute('''
             SELECT weekday, start_time, end_time, course_name

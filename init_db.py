@@ -235,7 +235,23 @@ def create_tables(cursor):
         )
     ''')
     
-    # 16. 组织者更换信息表
+    # 16. 参与者评价表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS participant_evaluations (
+            evaluation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            activity_id INTEGER NOT NULL,
+            participant_id INTEGER NOT NULL,
+            organizer_id INTEGER NOT NULL,
+            rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+            comment TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (activity_id) REFERENCES activities(activity_id),
+            FOREIGN KEY (participant_id) REFERENCES students(student_id),
+            FOREIGN KEY (organizer_id) REFERENCES students(student_id)
+        )
+    ''')
+    
+    # 17. 组织者更换信息表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS organizer_changes (
             change_id INTEGER PRIMARY KEY AUTOINCREMENT,
