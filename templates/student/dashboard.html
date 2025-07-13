@@ -47,200 +47,347 @@
             border-radius: 10px;
             padding: 1.5rem;
         }
-
-        .sidebar .nav-link.active {
-            background: #fff;
-            color: #1a237e !important;
-            border-radius: 12px;
-            font-weight: bold;
-        }
-        .sidebar .nav-link {
-            color: #fff !important;
-            margin-bottom: 8px;
-        }
-        .sidebar .nav-link:hover {
-            background: #3949ab;
-            color: #fff !important;
-        }
     </style>
 </head>
 <body>
-    <div class="container-fluid" style="padding-left:0;">
-        <div class="row">
-            <!-- 左侧导航栏 -->
-            <nav class="col-md-2 d-none d-md-block sidebar p-0" style="background: #1a237e; min-height: 100vh; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; border-radius: 12px 0 0 12px; box-shadow: 0 0 0 0;">
-                <div class="d-flex flex-column align-items-start h-100">
-                    <div class="sidebar-title d-flex justify-content-center align-items-center flex-column" style="height: 120px; border-bottom: 1px solid #3949ab; width: 100%;">
-                        <a href="/student/dashboard" class="text-decoration-none w-100 d-flex justify-content-center align-items-center">
-                            <span class="fs-2 fw-bold text-white text-center" style="width: 100%;">学生活动管理</span>
-                        </a>
-                    </div>
-                    <ul class="nav flex-column w-100 mt-5 px-2">
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/finished_activity' %}active{% endif %}" href="/student/finished_activity">已结束活动</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/profile_view' %}active{% endif %}" href="/student/profile_view">个人信息查看</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/profile_edit' %}active{% endif %}" href="/student/profile_edit">个人信息修改</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/schedule' %}active{% endif %}" href="/student/schedule">个人课表</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/leave' %}active{% endif %}" href="/student/leave">活动请假</a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {% if request.path == '/student/message' %}active{% endif %}" href="/student/message">消息</a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-            <!-- 主内容区 -->
-            <main class="col-md-10 offset-md-2 ms-sm-auto px-md-4" style="margin-left: 16.6667%;">
-                <!-- 页面标题 -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <h2><i class="fas fa-calendar-alt me-2"></i>活动中心</h2>
-                        <p class="text-muted">发现并参与感兴趣的校园活动</p>
-                    </div>
-                </div>
+    <div style="display: flex; min-height: 100vh;">
+        <!-- 左侧导航栏 -->
+        <nav style="width: 220px; background: #1a237e; color: #fff; padding: 20px 10px 0 20px; border-radius: 0 0 8px 0; font-family: '微软雅黑', Arial, sans-serif;">
+            <div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 30px;">学生活动管理</div>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 18px;"><a href="/student/dashboard" style="color: #fff; text-decoration: none; font-size: 1rem;">活动中心</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/apply" style="color: #fff; text-decoration: none; font-size: 1rem;">活动申请</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/organizer_activities" style="color: #fff; text-decoration: none; font-size: 1rem;">我组织的活动</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/score_entry" style="color: #fff; text-decoration: none; font-size: 1rem;">学生成绩录入</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/activity_review" style="color: #fff; text-decoration: none; font-size: 1rem;">活动学生审核</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/notification" style="color: #fff; text-decoration: none; font-size: 1rem;">通知</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/change_organizer" style="color: #fff; text-decoration: none; font-size: 1rem;">更换组织者</a></li>
+            </ul>
+        </nav>
+        <!-- 主体内容区域 -->
+        <div style="flex: 1;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-graduation-cap me-2"></i>活动管理系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user me-1"></i>欢迎，张三同学
+                </span>
+                <a class="nav-link" href="/logout">
+                    <i class="fas fa-sign-out-alt"></i> 退出登录
+                </a>
+            </div>
+        </div>
+    </nav>
 
-                <!-- 筛选区域 -->
-                <div class="filter-section">
-                    <h5 class="mb-3"><i class="fas fa-filter me-2"></i>筛选条件</h5>
-                    <form method="POST" action="/student/dashboard">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <select class="form-select" name="activity_type">
-                                    <option value="" {% if not filter_activity_type %}selected{% endif %}>所有类型</option>
-                                    <option value="indoor" {% if filter_activity_type=='indoor' %}selected{% endif %}>indoor（室内）</option>
-                                    <option value="outdoor" {% if filter_activity_type=='outdoor' %}selected{% endif %}>outdoor（室外）</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select class="form-select" name="status">
-                                    <option value="" {% if not filter_status %}selected{% endif %}>所有状态</option>
-                                    <option value="报名中" {% if filter_status=='报名中' %}selected{% endif %}>报名中</option>
-                                    <option value="即将开始" {% if filter_status=='即将开始' %}selected{% endif %}>即将开始</option>
-                                    <option value="进行中" {% if filter_status=='进行中' %}selected{% endif %}>进行中</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <input type="date" class="form-control" name="start_date" placeholder="开始日期" value="{{ filter_start_date }}">
-                            </div>
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-search me-1"></i>筛选
-                                </button>
-                            </div>
+    <div class="container mt-4">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2><i class="fas fa-calendar-alt me-2"></i>活动中心</h2>
+                <p class="text-muted">发现并参与感兴趣的校园活动</p>
+            </div>
+        </div>
+
+        <!-- 筛选区域 -->
+        <!-- 已移除筛选条件界面 -->
+
+        <!-- 我的活动状态 -->
+        <div class="my-activities mb-4">
+            <h5 class="mb-3"><i class="fas fa-user-check me-2"></i>我的活动状态</h5>
+            <div class="row">
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h4 text-secondary">{{ organized_count }}</div>
+                        <small class="text-muted">已组织</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h4 text-primary">3</div>
+                        <small class="text-muted">已报名</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h4 text-success">1</div>
+                        <small class="text-muted">进行中</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h4 text-warning">2</div>
+                        <small class="text-muted">待审核</small>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="text-center">
+                        <div class="h4 text-info">5</div>
+                        <small class="text-muted">已完成</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 活动列表 -->
+        <div class="row">
+            <div class="col-12">
+                <h5 class="mb-3"><i class="fas fa-list me-2"></i>可报名活动</h5>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 活动卡片 1 -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card activity-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="activity-type">学术</span>
+                            <span class="badge bg-success status-badge">报名中</span>
+                        </div>
+                        <h5 class="card-title">Python编程竞赛</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-1"></i>2024-03-15 至 2024-03-20<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>计算机学院机房<br>
+                            <i class="fas fa-users me-1"></i>已报名: 15/30人
+                        </p>
+                        <p class="card-text">提升编程技能，与同学切磋技艺，获得证书和奖励。</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-star text-warning me-1"></i>积分: 20
+                            </small>
+                            <button class="btn btn-primary btn-sm" onclick="joinActivity(1)">
+                                <i class="fas fa-plus me-1"></i>报名
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动卡片 2 -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card activity-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="activity-type">文艺</span>
+                            <span class="badge bg-warning status-badge">即将开始</span>
+                        </div>
+                        <h5 class="card-title">春季音乐会</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-1"></i>2024-03-22 19:00<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>学校大礼堂<br>
+                            <i class="fas fa-users me-1"></i>已报名: 8/15人
+                        </p>
+                        <p class="card-text">展示音乐才华，丰富校园文化生活。</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-star text-warning me-1"></i>积分: 15
+                            </small>
+                            <button class="btn btn-primary btn-sm" onclick="joinActivity(2)">
+                                <i class="fas fa-plus me-1"></i>报名
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动卡片 3 -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card activity-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="activity-type">志愿服务</span>
+                            <span class="badge bg-success status-badge">报名中</span>
+                        </div>
+                        <h5 class="card-title">社区义工活动</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-1"></i>2024-03-25 周末<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>附近社区<br>
+                            <i class="fas fa-users me-1"></i>已报名: 12/20人
+                        </p>
+                        <p class="card-text">服务社区，奉献爱心，培养社会责任感。</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-star text-warning me-1"></i>积分: 25
+                            </small>
+                            <button class="btn btn-primary btn-sm" onclick="joinActivity(3)">
+                                <i class="fas fa-plus me-1"></i>报名
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动卡片 4 -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card activity-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="activity-type">体育</span>
+                            <span class="badge bg-info status-badge">进行中</span>
+                        </div>
+                        <h5 class="card-title">篮球友谊赛</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-1"></i>2024-03-10 至 2024-03-30<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>体育馆<br>
+                            <i class="fas fa-users me-1"></i>已报名: 20/20人
+                        </p>
+                        <p class="card-text">强身健体，团队合作，享受运动乐趣。</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-star text-warning me-1"></i>积分: 18
+                            </small>
+                            <button class="btn btn-secondary btn-sm" disabled>
+                                <i class="fas fa-times me-1"></i>已满员
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动卡片 5 -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card activity-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="activity-type">社会实践</span>
+                            <span class="badge bg-success status-badge">报名中</span>
+                        </div>
+                        <h5 class="card-title">企业参观实习</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-1"></i>2024-04-01 至 2024-04-05<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>合作企业<br>
+                            <i class="fas fa-users me-1"></i>已报名: 5/12人
+                        </p>
+                        <p class="card-text">了解行业发展，增长实践经验。</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-star text-warning me-1"></i>积分: 30
+                            </small>
+                            <button class="btn btn-primary btn-sm" onclick="joinActivity(5)">
+                                <i class="fas fa-plus me-1"></i>报名
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动卡片 6 -->
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card activity-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="activity-type">学术</span>
+                            <span class="badge bg-success status-badge">报名中</span>
+                        </div>
+                        <h5 class="card-title">学术论文写作讲座</h5>
+                        <p class="card-text text-muted">
+                            <i class="fas fa-calendar me-1"></i>2024-03-28 14:00<br>
+                            <i class="fas fa-map-marker-alt me-1"></i>图书馆报告厅<br>
+                            <i class="fas fa-users me-1"></i>已报名: 25/50人
+                        </p>
+                        <p class="card-text">提升学术写作能力，掌握论文写作技巧。</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-star text-warning me-1"></i>积分: 12
+                            </small>
+                            <button class="btn btn-primary btn-sm" onclick="joinActivity(6)">
+                                <i class="fas fa-plus me-1"></i>报名
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <nav aria-label="活动列表分页">
+            <ul class="pagination justify-content-center">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">上一页</a>
+                </li>
+                <li class="page-item active">
+                    <a class="page-link" href="#">1</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">2</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">3</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="#">下一页</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- 报名确认模态框 -->
+    <div class="modal fade" id="joinModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">确认报名</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>您确定要报名参加此活动吗？</p>
+                    <form id="joinForm" method="POST" action="/student/join">
+                        <input type="hidden" name="activity_id" id="activityId">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">报名理由（可选）</label>
+                            <textarea class="form-control" name="reason" id="reason" rows="3" placeholder="请简述您的报名理由或期望..."></textarea>
                         </div>
                     </form>
                 </div>
-
-                <!-- 我的活动状态 -->
-                <div class="my-activities mb-4">
-                    <h5 class="mb-3"><i class="fas fa-user-check me-2"></i>我的活动状态</h5>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h4 text-primary">{{ count_applied }}</div>
-                                <small class="text-muted">已报名</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h4 text-success">{{ count_in_progress }}</div>
-                                <small class="text-muted">进行中</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h4 text-warning">{{ count_pending }}</div>
-                                <small class="text-muted">待审核</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h4 text-info">{{ count_completed }}</div>
-                                <small class="text-muted">已完成</small>
-                            </div>
-                        </div>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" form="joinForm" class="btn btn-primary">确认报名</button>
                 </div>
-
-                <!-- 活动列表 -->
-                <div class="row">
-                    <div class="col-12">
-                        <h5 class="mb-3"><i class="fas fa-list me-2"></i>可报名活动</h5>
-                    </div>
-                </div>
-
-                <div class="row">
-                    {% for activity in available_activities %}
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card activity-card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <span class="activity-type">{{ activity.activity_type or '未知' }}</span>
-                                    <span class="badge bg-success status-badge">报名中</span>
-                                </div>
-                                <h5 class="card-title">{{ activity.activity_name }}</h5>
-                                <p class="card-text text-muted">
-                                    <i class="fas fa-calendar me-1"></i>{{ activity.start_time }} 至 {{ activity.end_time }}<br>
-                                    <i class="fas fa-users me-1"></i>已报名: {{ activity.participant_count }}/{{ activity.max_participants }}人
-                                </p>
-                                <p class="card-text">{{ activity.description }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="fas fa-star text-warning me-1"></i>积分: {{ activity.total_score or 0 }}
-                                    </small>
-                                    <form method="post" action="{{ url_for('apply_activity', activity_id=activity.activity_id) }}" style="margin:0;">
-                                        <button type="submit" class="btn btn-primary btn-sm" {% if activity.participant_count >= activity.max_participants %}disabled{% endif %}>
-                                            <i class="fas fa-plus me-1"></i>{% if activity.participant_count >= activity.max_participants %}已满员{% else %}报名{% endif %}
-                                    </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="col-12 text-center text-muted">暂无可报名活动</div>
-                    {% endfor %}
-                </div>
-
-                <!-- 分页 -->
-                <nav aria-label="活动列表分页">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1">上一页</a>
-                        </li>
-                        <li class="page-item active">
-                            <a class="page-link" href="#">1</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">3</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">下一页</a>
-                        </li>
-                    </ul>
-                </nav>
-            </main>
+            </div>
         </div>
     </div>
 
-    <!-- 报名确认模态框及JS可移除，因已用表单直连后端 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function joinActivity(activityId) {
+            document.getElementById('activityId').value = activityId;
+            var modal = new bootstrap.Modal(document.getElementById('joinModal'));
+            modal.show();
+        }
+
+        // 处理表单提交
+        document.getElementById('joinForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 这里可以添加AJAX请求
+            fetch('/student/join', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(new FormData(this))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('报名成功！');
+                    location.reload();
+                } else {
+                    alert('报名失败：' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('报名失败，请稍后重试。');
+            });
+        });
+    </script>
+        </div>
+    </div>
 
     {% if session.get('need_role_select') %}
     <!-- 选择身份弹窗 Modal -->
@@ -270,6 +417,7 @@
       };
     </script>
     {% endif %}
+
 
 </body>
 </html>

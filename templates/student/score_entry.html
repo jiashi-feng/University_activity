@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生成绩录入 - 活动管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f3f3f3; }
+        .sidebar {
+            width: 220px;
+            background: #1a237e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px 10px 0 20px;
+            border-radius: 0 0 8px 0;
+            font-family: '微软雅黑', Arial, sans-serif;
+        }
+        .sidebar .title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar ul li { margin-bottom: 18px; }
+        .sidebar ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+        .sidebar ul li a.active, .sidebar ul li a:hover {
+            color: #ffeb3b;
+        }
+        .main-content {
+            background: #fff;
+            border-radius: 8px;
+            margin: 40px 30px 30px 0;
+            padding: 30px 40px;
+            min-height: 80vh;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .table thead th { background: #e3e6f0; }
+        .btn-primary { background: #1976d2; border: none; }
+        .btn-warning { background: #ffa000; border: none; color: #fff; }
+        .form-control, .form-select { border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <div style="display: flex; min-height: 100vh;">
+        <div class="sidebar">
+            <div class="title">沈航活动管理系统</div>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="margin-bottom: 18px;"><a href="/student/dashboard" style="color: #fff; text-decoration: none; font-size: 1rem;">活动中心</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/apply" style="color: #fff; text-decoration: none; font-size: 1rem;">活动申请</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/organizer_activities" style="color: #fff; text-decoration: none; font-size: 1rem;">我组织的活动</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/score_entry" style="color: #fff; text-decoration: none; font-size: 1rem;">学生成绩录入</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/activity_review" style="color: #fff; text-decoration: none; font-size: 1rem;">活动学生审核</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/notification" style="color: #fff; text-decoration: none; font-size: 1rem;">通知</a></li>
+                <li style="margin-bottom: 18px;"><a href="/student/change_organizer" style="color: #fff; text-decoration: none; font-size: 1rem;">更换组织者</a></li>
+            </ul>
+        </div>
+        <div style="flex: 1;">
+            <div class="main-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div></div>
+                    <button id="edit-btn" type="button" class="btn btn-info" style="background:#1976d2;color:#fff;">录入活动成绩</button>
+                </div>
+                <form method="post" action="/student/score_entry">
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>活动名称</th>
+                                <th>学生姓名</th>
+                                <th>活动时间</th>
+                                <th>年级</th>
+                                <th>活动人数</th>
+                                <th>录入人</th>
+                                <th>成绩（五分制）</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in scores %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ row.activity_name }}</td>
+                                <td>{{ row.student_name }}</td>
+                                <td>{{ row.activity_time }}</td>
+                                <td>{{ row.grade }}</td>
+                                <td>{{ row.participants }}</td>
+                                <td>{{ row.input_by }}</td>
+                                <td>
+                                    <select name="score_{{ loop.index0 }}" class="form-control score-input" data-activity-id="{{ row.activity_id }}" data-student-id="{{ row.student_id }}" disabled onchange="saveScore(this)">
+                                        <option value="">请选择</option>
+                                        <option value="0">0分</option>
+                                        <option value="1">1分</option>
+                                        <option value="2">2分</option>
+                                        <option value="3">3分</option>
+                                        <option value="4">4分</option>
+                                        <option value="5">5分</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                </form>
+                <script>
+                document.getElementById('edit-btn').onclick = function() {
+                    console.log('按钮被点击');
+                    var inputs = document.querySelectorAll('.score-input');
+                    console.log('找到选择框数量:', inputs.length);
+                    inputs.forEach(function(input) {
+                        input.disabled = false;
+                        console.log('启用选择框');
+                    });
+                };
+                function saveScore(input) {
+                    var score = parseInt(input.value);
+                    if (isNaN(score) || score < 0 || score > 5) {
+                        alert('请选择0-5之间的成绩！');
+                        input.value = '';
+                        return;
+                    }
+                    input.disabled = true;
+                    var activity_id = input.getAttribute('data-activity-id');
+                    var student_id = input.getAttribute('data-student-id');
+                    fetch('/student/save_score', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ activity_id, student_id, score })
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) {
+                            alert('成绩录入成功！');
+                        } else {
+                            alert('录入失败：' + data.message);
+                        }
+                    });
+                }
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
