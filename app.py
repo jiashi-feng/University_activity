@@ -76,7 +76,7 @@ def index():
     if 'user_id' in session:
         user_type = session.get('user_type')
         if user_type == 'student':
-            return redirect(url_for('student_dashboard'))
+            return redirect(url_for('index')) # 学生登录后跳转到选择界面
         elif user_type == 'teacher':
             return redirect(url_for('teacher_dashboard'))
     return redirect(url_for('login'))
@@ -110,7 +110,7 @@ def login():
                 
                 # 根据用户类型重定向
                 if user['user_type'] == 'student':
-                    return redirect(url_for('student_dashboard'))
+                    return redirect(url_for('dashboard_select'))
                 elif user['user_type'] == 'teacher':
                     return redirect(url_for('teacher_dashboard'))
             else:
@@ -122,6 +122,24 @@ def login():
             db.close()
     
     return render_template('login.html')
+
+# 新增：学生登录后选择界面
+@app.route('/student/dashboard_select', methods=['GET', 'POST'])
+def dashboard_select():
+    if request.method == 'POST':
+        role = request.form.get('role')
+        if role == 'participant':
+            return redirect(url_for('student_dashboard'))
+        elif role == 'organizer':
+            return redirect(url_for('student_dashboard2'))
+    return render_template('student/dashboard_select.html')
+
+# 新增：组织者界面（dashboard2.html）
+@app.route('/student/dashboard2')
+@login_required
+@role_required('student')
+def student_dashboard2():
+    return render_template('student/dashboard.html')
 
 # 登出路由
 @app.route('/logout')
@@ -215,7 +233,7 @@ def student_dashboard():
                     count_in_progress += 1
             elif act['ap_status'] == 'in_progress' or (is_approved or node_count < 4):
                 count_in_progress += 1
-        return render_template('student/dashboard.html', 
+        return render_template('student/dashboard1.html', 
                              student_info=student_info,
                              student_skills=student_skills,
                              available_activities=available_activities,
@@ -229,7 +247,7 @@ def student_dashboard():
                              count_completed=count_completed)
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('student/dashboard.html', 
+        return render_template('student/dashboard1.html', 
                              student_info=None,
                              student_skills=[],
                              available_activities=[],

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>参与者主页 - 活动管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .activity-card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .activity-card:hover {
+            transform: translateY(-5px);
+        }
+        .status-badge {
+            font-size: 0.8rem;
+        }
+        .activity-type {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #5a67d8 0%, #6b46c1 100%);
+        }
+        .filter-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .my-activities {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 1.5rem;
+        }
+        .sidebar .nav-link.active {
+            background: #fff;
+            color: #1a237e !important;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+        .sidebar .nav-link {
+            color: #fff !important;
+            margin-bottom: 8px;
+        }
+        .sidebar .nav-link:hover {
+            background: #3949ab;
+            color: #fff !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="padding-left:0;">
+        <div class="row">
+            <!-- 左侧导航栏 -->
+            <nav class="col-md-2 d-none d-md-block sidebar p-0" style="background: #1a237e; min-height: 100vh; height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; border-radius: 12px 0 0 12px; box-shadow: 0 0 0 0;">
+                <div class="d-flex flex-column align-items-start h-100">
+                    <div class="sidebar-title d-flex justify-content-center align-items-center flex-column" style="height: 120px; border-bottom: 1px solid #3949ab; width: 100%;">
+                        <a href="/student/dashboard" class="text-decoration-none w-100 d-flex justify-content-center align-items-center">
+                            <span class="fs-2 fw-bold text-white text-center" style="width: 100%;">学生活动管理</span>
+                        </a>
+                    </div>
+                    <ul class="nav flex-column w-100 mt-5 px-2">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/add_activity' %}active{% endif %} fw-bold" href="/student/add_activity">活动添加</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/doing_activity' %}active{% endif %}" href="/student/doing_activity">进行活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/finished_activity' %}active{% endif %}" href="/student/finished_activity">已结束活动</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_view' %}active{% endif %}" href="/student/profile_view">个人信息查看</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/profile_edit' %}active{% endif %}" href="/student/profile_edit">个人信息修改</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/schedule' %}active{% endif %}" href="/student/schedule">个人课表</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/leave' %}active{% endif %}" href="/student/leave">活动请假</a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {% if request.path == '/student/message' %}active{% endif %}" href="/student/message">消息</a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <!-- 主内容区 -->
+            <main class="col-md-10 offset-md-2 ms-sm-auto px-md-4" style="margin-left: 16.6667%;">
+                <!-- 页面标题 -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2><i class="fas fa-calendar-alt me-2"></i>活动中心</h2>
+                        <p class="text-muted">发现并参与感兴趣的校园活动</p>
+                    </div>
+                </div>
+
+                <!-- 筛选区域 -->
+                <div class="filter-section">
+                    <h5 class="mb-3"><i class="fas fa-filter me-2"></i>筛选条件</h5>
+                    <form method="POST" action="/student/dashboard">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <select class="form-select" name="activity_type">
+                                    <option value="" {% if not filter_activity_type %}selected{% endif %}>所有类型</option>
+                                    <option value="indoor" {% if filter_activity_type=='indoor' %}selected{% endif %}>indoor（室内）</option>
+                                    <option value="outdoor" {% if filter_activity_type=='outdoor' %}selected{% endif %}>outdoor（室外）</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select" name="status">
+                                    <option value="" {% if not filter_status %}selected{% endif %}>所有状态</option>
+                                    <option value="报名中" {% if filter_status=='报名中' %}selected{% endif %}>报名中</option>
+                                    <option value="即将开始" {% if filter_status=='即将开始' %}selected{% endif %}>即将开始</option>
+                                    <option value="进行中" {% if filter_status=='进行中' %}selected{% endif %}>进行中</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" class="form-control" name="start_date" placeholder="开始日期" value="{{ filter_start_date }}">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search me-1"></i>筛选
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 我的活动状态 -->
+                <div class="my-activities mb-4">
+                    <h5 class="mb-3"><i class="fas fa-user-check me-2"></i>我的活动状态</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-primary">{{ count_applied }}</div>
+                                <small class="text-muted">已报名</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-success">{{ count_in_progress }}</div>
+                                <small class="text-muted">进行中</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-warning">{{ count_pending }}</div>
+                                <small class="text-muted">待审核</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 text-info">{{ count_completed }}</div>
+                                <small class="text-muted">已完成</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 活动列表 -->
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="mb-3"><i class="fas fa-list me-2"></i>可报名活动</h5>
+                    </div>
+                </div>
+
+                <div class="row">
+                    {% for activity in available_activities %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card activity-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="activity-type">{{ activity.activity_type or '未知' }}</span>
+                                    <span class="badge bg-success status-badge">报名中</span>
+                                </div>
+                                <h5 class="card-title">{{ activity.activity_name }}</h5>
+                                <p class="card-text text-muted">
+                                    <i class="fas fa-calendar me-1"></i>{{ activity.start_time }} 至 {{ activity.end_time }}<br>
+                                    <i class="fas fa-users me-1"></i>已报名: {{ activity.participant_count }}/{{ activity.max_participants }}人
+                                </p>
+                                <p class="card-text">{{ activity.description }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-star text-warning me-1"></i>积分: {{ activity.total_score or 0 }}
+                                    </small>
+                                    <form method="post" action="{{ url_for('apply_activity', activity_id=activity.activity_id) }}" style="margin:0;">
+                                        <button type="submit" class="btn btn-primary btn-sm" {% if activity.participant_count >= activity.max_participants %}disabled{% endif %}>
+                                            <i class="fas fa-plus me-1"></i>{% if activity.participant_count >= activity.max_participants %}已满员{% else %}报名{% endif %}
+                                    </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center text-muted">暂无可报名活动</div>
+                    {% endfor %}
+                </div>
+
+                <!-- 分页 -->
+                <nav aria-label="活动列表分页">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">上一页</a>
+                        </li>
+                        <li class="page-item active">
+                            <a class="page-link" href="#">1</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">2</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">3</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">下一页</a>
+                        </li>
+                    </ul>
+                </nav>
+            </main>
+        </div>
+    </div>
+
+    <!-- 报名确认模态框及JS可移除，因已用表单直连后端 -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

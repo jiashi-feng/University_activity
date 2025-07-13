@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择身份 - 活动管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .select-role-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+        .select-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .select-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+        }
+        .role-btn {
+            width: 180px;
+            height: 60px;
+            font-size: 1.2rem;
+            margin: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="select-role-container">
+        <div class="select-card">
+            <div class="select-title">请选择进入的身份界面</div>
+            <form method="POST">
+                <button type="submit" name="role" value="participant" class="btn btn-primary role-btn">参与者界面</button>
+                <button type="submit" name="role" value="organizer" class="btn btn-success role-btn">组织者界面</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
