@@ -33,7 +33,7 @@ def index():
     if 'user_id' in session:
         user_type = session.get('user_type')
         if user_type == 'student':
-            return redirect(url_for('student_dashboard'))
+            return redirect(url_for('index')) # 学生登录后跳转到选择界面
         elif user_type == 'teacher':
             # 检查是否为管理员
             if session.get('is_admin'):
@@ -68,23 +68,10 @@ def login():
                 session['user_type'] = user['user_type']
                 session['username'] = user['name']
                 session['college'] = user['college']
-                
-                # 如果是教师，检查是否为管理员
-                if user['user_type'] == 'teacher':
-                    teacher = db.execute(
-                        'SELECT is_admin FROM teachers WHERE teacher_id = ?',
-                        (user['user_id'],)
-                    ).fetchone()
-                    
-                    if teacher and teacher['is_admin']:
-                        session['is_admin'] = True
-                        return redirect(url_for('admin.dashboard'))  # 使用蓝图的URL
-                    else:
-                        session['is_admin'] = False
-                        return redirect(url_for('teacher_dashboard.dashboard'))
-                elif user['user_type'] == 'student':
-                    session['is_admin'] = False
-                    return redirect(url_for('student_dashboard'))
+                if user['user_type'] == 'student':
+                    return redirect(url_for('dashboard_select'))
+                elif user['user_type'] == 'teacher':
+                    return redirect(url_for('teacher_dashboard'))
             else:
                 flash('用户名或密码错误', 'error')
         
@@ -94,6 +81,24 @@ def login():
             db.close()
     
     return render_template('login.html')
+
+# 新增：学生登录后选择界面
+@app.route('/student/dashboard_select', methods=['GET', 'POST'])
+def dashboard_select():
+    if request.method == 'POST':
+        role = request.form.get('role')
+        if role == 'participant':
+            return redirect(url_for('student_dashboard'))  # dashboard.html
+        elif role == 'organizer':
+            return redirect(url_for('student_dashboard1'))  # dashboard1.html
+    return render_template('student/dashboard_select.html')
+
+# 组织者界面（dashboard1.html）
+@app.route('/student/dashboard1')
+@login_required
+@role_required('student')
+def student_dashboard1():
+    return render_template('student/dashboard1.html')
 
 # 登出路由
 @app.route('/logout')
@@ -109,6 +114,14 @@ def logout():
 @login_required
 @role_required('student')
 def student_dashboard():
+    # 弹窗选择身份
+    if request.method == 'POST' and session.get('need_role_select'):
+        role = request.form.get('role')
+        session.pop('need_role_select', None)
+        if role == 'participant':
+            pass  # 留在本页
+        elif role == 'organizer':
+            return redirect(url_for('student_dashboard1'))
     db = get_db()
     try:
         # 获取学生信息
@@ -167,13 +180,29 @@ def student_dashboard():
             ORDER BY a.start_time DESC
         ''', (session['user_id'],)).fetchall()
 
-        
-        # 获取已组织的活动数量
-        organized_count = db.execute('''
-            SELECT COUNT(*) FROM activities WHERE organizer_id = ?
-        ''', (session['user_id'],)).fetchone()[0]
+        # 统计各类活动数量（结合节点数和审核状态）
+        count_applied = 0
+        count_in_progress = 0
+        count_pending = 0
+        count_completed = 0
+        for act in my_activities:
+            # 查询该活动的进度节点数
+            node_count = db.execute('''SELECT COUNT(*) FROM activity_progress WHERE activity_id=? AND participant_id=?''', (act['ap_activity_id'], session['user_id'])).fetchone()[0]
+            # 审核通过：ap.status in ('in_progress','completed') 或 ap.approved_at不为空
+            is_approved = act['ap_status'] in ('in_progress','completed') or (act['approved_at'] is not None)
+            if act['ap_status'] == 'completed':
+                count_completed += 1
+            elif act['ap_status'] == 'applied':
+                if not is_approved:
+                    if node_count == 0 or node_count == 4:
+                        count_applied += 1
+                    count_pending += 1
+                else:
+                    count_in_progress += 1
+            elif act['ap_status'] == 'in_progress' or (is_approved or node_count < 4):
+                count_in_progress += 1
+        return render_template('student/dashboard1.html', 
 
-        return render_template('student/dashboard.html', 
                              student_info=student_info,
                              student_skills=student_skills,
                              available_activities=available_activities,
@@ -183,7 +212,7 @@ def student_dashboard():
     
     except Exception as e:
         flash(f'获取数据失败：{str(e)}', 'error')
-        return render_template('student/dashboard.html', 
+        return render_template('student/dashboard1.html', 
                              student_info=None,
                              student_skills=[],
                              available_activities=[],
