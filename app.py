@@ -80,10 +80,8 @@ def login():
                 session['user_type'] = user['user_type']
                 session['username'] = user['name']
                 session['college'] = user['college']
-                
-                # 根据用户类型重定向
                 if user['user_type'] == 'student':
-                    return redirect(url_for('student_dashboard'))
+                    return redirect(url_for('dashboard_select'))
                 elif user['user_type'] == 'teacher':
                     return redirect(url_for('teacher_dashboard'))
             else:
@@ -102,17 +100,17 @@ def dashboard_select():
     if request.method == 'POST':
         role = request.form.get('role')
         if role == 'participant':
-            return redirect(url_for('student_dashboard'))
+            return redirect(url_for('student_dashboard'))  # dashboard.html
         elif role == 'organizer':
-            return redirect(url_for('student_dashboard2'))
+            return redirect(url_for('student_dashboard1'))  # dashboard1.html
     return render_template('student/dashboard_select.html')
 
-# 新增：组织者界面（dashboard2.html）
-@app.route('/student/dashboard2')
+# 组织者界面（dashboard1.html）
+@app.route('/student/dashboard1')
 @login_required
 @role_required('student')
-def student_dashboard2():
-    return render_template('student/dashboard.html')
+def student_dashboard1():
+    return render_template('student/dashboard1.html')
 
 # 登出路由
 @app.route('/logout')
@@ -128,6 +126,14 @@ def logout():
 @login_required
 @role_required('student')
 def student_dashboard():
+    # 弹窗选择身份
+    if request.method == 'POST' and session.get('need_role_select'):
+        role = request.form.get('role')
+        session.pop('need_role_select', None)
+        if role == 'participant':
+            pass  # 留在本页
+        elif role == 'organizer':
+            return redirect(url_for('student_dashboard1'))
     db = get_db()
     try:
         # 获取学生信息
